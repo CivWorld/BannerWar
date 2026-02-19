@@ -12,7 +12,7 @@ authors:
 
 website: ${organization.url}
 
-prefix: FlagWar
+prefix: BannerWar
 
 description: ${description}
 

@@ -38,17 +38,15 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
+import io.github.townyadvanced.flagwar.database.DatabaseManager;
+import io.github.townyadvanced.flagwar.database.DatabaseService;
 import io.github.townyadvanced.flagwar.events.CellAttackCanceledEvent;
 import io.github.townyadvanced.flagwar.events.CellAttackEvent;
 import io.github.townyadvanced.flagwar.events.CellDefendedEvent;
 import io.github.townyadvanced.flagwar.events.CellWonEvent;
 import io.github.townyadvanced.flagwar.i18n.LocaleUtil;
 import io.github.townyadvanced.flagwar.i18n.Translate;
-import io.github.townyadvanced.flagwar.listeners.FlagWarBlockListener;
-import io.github.townyadvanced.flagwar.listeners.FlagWarCustomListener;
-import io.github.townyadvanced.flagwar.listeners.FlagWarEntityListener;
-import io.github.townyadvanced.flagwar.listeners.WarzoneListener;
-import io.github.townyadvanced.flagwar.listeners.OutlawListener;
+import io.github.townyadvanced.flagwar.listeners.*;
 import io.github.townyadvanced.flagwar.objects.Cell;
 import io.github.townyadvanced.flagwar.objects.CellUnderAttack;
 
@@ -123,6 +121,16 @@ public class FlagWar extends JavaPlugin {
     private WarzoneListener warzoneListener;
     /** Holds instance of the {@link OutlawListener}. */
     private OutlawListener outlawListener;
+    /** Holds instance of the {@link BattleListener}. */
+    private BattleListener battleListener;
+    /** Holds instance of the {@link DatabaseManager}. */
+    private DatabaseManager databaseManager;
+    /** Holds instance of the {@link DatabaseService}. */
+    private DatabaseService databaseService;
+    /** Holds instance of the {@link BattleClock}. */
+    private BattleClock battleClock;
+
+
 
     /**
      * Initializes the Scheduler object based on whether we're using Folia/Paper or Spigot/Bukkit.
@@ -227,6 +235,7 @@ public class FlagWar extends JavaPlugin {
         PLUGIN_MANAGER.registerEvents(flagWarEntityListener, this);
         PLUGIN_MANAGER.registerEvents(warzoneListener, this);
         PLUGIN_MANAGER.registerEvents(outlawListener, this);
+        PLUGIN_MANAGER.registerEvents(battleListener, this);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.events.registered"));
     }
 
@@ -238,6 +247,7 @@ public class FlagWar extends JavaPlugin {
         flagWarEntityListener = new FlagWarEntityListener();
         warzoneListener = new WarzoneListener();
         outlawListener = new OutlawListener();
+        battleListener = new BattleListener(this);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialized"));
     }
 
