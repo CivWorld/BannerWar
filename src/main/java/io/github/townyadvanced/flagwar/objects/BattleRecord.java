@@ -15,7 +15,8 @@ public record BattleRecord (
     boolean isCityState,
     BattleStage stage,
     UUID worldID,
-    Collection<TownBlock> townBlocks
+    Collection<TownBlock> townBlocks,
+    UUID initialMayorID
 )
 {
     public static BattleRecord of(Battle b) {
@@ -29,7 +30,8 @@ public record BattleRecord (
             b.isCityState(),
             b.getStage(),
             b.getContestedTown().getWorld().getUID(),
-            b.getInitialTownBlocks()
+            b.getInitialTownBlocks(),
+            b.getInitialMayor().getUUID()
         );
     }
 }

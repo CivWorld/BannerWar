@@ -17,9 +17,14 @@
 
 package io.github.townyadvanced.flagwar.listeners;
 
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.event.actions.TownyActionEvent;
-import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownBlock;
+import com.palmergames.bukkit.towny.object.*;
+import io.github.townyadvanced.flagwar.BannerWarAPI;
+import io.github.townyadvanced.flagwar.Broadcasts;
+import io.github.townyadvanced.flagwar.objects.BattleStage;
+import io.github.townyadvanced.flagwar.util.FormatUtil;
+import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,8 +38,6 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.event.actions.TownyBuildEvent;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
-import com.palmergames.bukkit.towny.object.Coord;
-import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.object.PlayerCache.TownBlockStatus;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
@@ -68,17 +71,37 @@ public class FlagWarBlockListener implements Listener {
     @SuppressWarnings("unused")
     public void onFlagWarFlagPlace(final TownyBuildEvent townyBuildEvent) {
         TownBlock townBlock = townyBuildEvent.getTownBlock();
+        Resident r = TownyAPI.getInstance().getResident(townyBuildEvent.getPlayer());
+
         if (townBlock != null) {
             Town town = townBlock.getTownOrNull();
-
             if (!townBlock.getWorld().isWarAllowed()
-                || (town != null && !town.isAllowedToWar())
+                || (town == null || !town.isAllowedToWar())
                 || !FlagWarConfig.isAllowingAttacks()
+                ||  town.getNationOrNull() == null
+                || (r == null || r.getTownOrNull() == null || r.getTownOrNull().getNationOrNull() == null)
                 || !townyBuildEvent.getMaterial().equals(FlagWarConfig.getFlagBaseMaterial())) {
                 return;
             }
 
             var player = townyBuildEvent.getPlayer();
+            Nation defender = town.getNationOrNull();
+            Nation attacker = r.getTownOrNull().getNationOrNull();
+
+            if (attacker.hasAlly(defender) || attacker.equals(defender)) return;
+
+            if (!BannerWarAPI.isInBattle(town)) {
+                Broadcasts.sendMessage(player, ChatColor.RED +
+                    "You cannot flag a town that is not in a battle!");
+                return;
+            }
+
+            if (!BannerWarAPI.canFlag(town)) {
+                Broadcasts.sendMessage(player, ChatColor.RED +
+                    "You cannot flag a town that is not in its " + ChatColor.AQUA + "FLAG" + ChatColor.RED + " state!");
+                return;
+            }
+
             var block = player.getWorld().getBlockAt(townyBuildEvent.getLocation());
             var worldCoord = new WorldCoord(block.getWorld().getName(), Coord.parseCoord(block));
 

@@ -38,9 +38,7 @@ public final class BattleClock {
         CLOCK_TASK = SCHEDULER.runTaskTimer(
             PLUGIN,
             () -> {
-                LOGGER.info("Tick! Cycle task start.");
                 onCycle();
-                LOGGER.info("Tock! Cycle task end.");
             },
             200,
             200); // TODO: MAKE THIS CONFIGURABLE
@@ -60,6 +58,6 @@ public final class BattleClock {
      * The tasks that this class will perform every configured cycle.
      */
     private void onCycle() {
-        BATTLE_MANAGER.updateActiveBattles();
+        BATTLE_MANAGER.updateBattles();
     }
 }

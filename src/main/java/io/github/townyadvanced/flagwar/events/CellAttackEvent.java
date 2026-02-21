@@ -29,7 +29,6 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
-
 /**
  * Event fired when a Towny Cell is being attacked.
  */

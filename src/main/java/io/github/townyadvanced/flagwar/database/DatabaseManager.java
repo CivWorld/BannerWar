@@ -24,7 +24,7 @@ public final class DatabaseManager {
     /** Holds the DDL creation query of every table and index in the database. */
     private static final List<String> QUERIES = List.of("""
         CREATE TABLE IF NOT EXISTS Battle (
-            ContestedTown PRIMARY KEY TEXT NOT NULL,
+            ContestedTown TEXT PRIMARY KEY NOT NULL,
             Attacker TEXT NOT NULL,
             Defender TEXT NOT NULL,
             HomeX INTEGER NOT NULL,
@@ -32,8 +32,9 @@ public final class DatabaseManager {
             StageStartTime INTEGER NOT NULL,
             CityState BOOLEAN NOT NULL,
             Stage TEXT NOT NULL,
-            String World NOT NULL,
-            String TownBlocks NOT NULL
+            World TEXT NOT NULL,
+            TownBlocks TEXT NOT NULL,
+            InitialMayor TEXT NOT NULL
         );
         """
     );

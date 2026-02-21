@@ -1,5 +1,6 @@
 package io.github.townyadvanced.flagwar;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -11,8 +12,21 @@ public final class Broadcasts {
 
     private Broadcasts() {}
 
-    public static void sendMessage(Player p, String message) {
-        p.sendMessage(PREFIX + message);
+    /**
+     * Sends a message to the specified {@link Player}, formatted for BannerWar.
+     * @param p the specified {@link Player}
+     * @param msg the message
+     */
+    public static void sendMessage(Player p, String msg) {
+        p.sendMessage(PREFIX + msg);
+    }
+
+    /**
+     * Broadcasts a message to the entire server, formatted for BannerWar.
+     * @param msg the message
+     */
+    public static void broadcastMessage(String msg) {
+        Bukkit.getServer().broadcastMessage(PREFIX + msg);
     }
 
 }

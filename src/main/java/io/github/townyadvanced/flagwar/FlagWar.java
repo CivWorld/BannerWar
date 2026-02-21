@@ -35,6 +35,7 @@ import com.palmergames.bukkit.towny.scheduling.impl.FoliaTaskScheduler;
 import com.palmergames.bukkit.towny.utils.AreaSelectionUtil;
 import com.palmergames.bukkit.util.Version;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
@@ -71,6 +72,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.entity.Bat;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.plugin.Plugin;
@@ -129,8 +131,8 @@ public class FlagWar extends JavaPlugin {
     private DatabaseService databaseService;
     /** Holds instance of the {@link BattleClock}. */
     private BattleClock battleClock;
-
-
+    /** Holds instance of the {@link BattleManager}. */
+    private BattleManager battleManager;
 
     /**
      * Initializes the Scheduler object based on whether we're using Folia/Paper or Spigot/Bukkit.
@@ -143,7 +145,9 @@ public class FlagWar extends JavaPlugin {
     /** On-Enable Protocol. */
     @Override
     public void onEnable() {
+
         setInstance();
+        initializeInstances();
 
         if (loadConfig()) {
             setLocale();
@@ -156,6 +160,8 @@ public class FlagWar extends JavaPlugin {
             bStatsKickstart();
 
             new TownyAdminReloadAddon();
+            getCommand("StageAdvance").setExecutor(new StageAdvance(this));
+
         }
     }
 
@@ -175,10 +181,14 @@ public class FlagWar extends JavaPlugin {
         return true;
     }
 
+
+
     /** On-Disable Protocol. */
     @Override
     public void onDisable() {
         FW_LOGGER.log(Level.INFO, () -> Translate.from("shutdown.cancel-all"));
+
+        battleClock.kill();
 
         if (!ATTACK_HASH_MAP.isEmpty()) {
             for (CellUnderAttack cell : new ArrayList<>(ATTACK_HASH_MAP.values())) {
@@ -239,6 +249,14 @@ public class FlagWar extends JavaPlugin {
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.events.registered"));
     }
 
+    /** Initialize Instances. */
+    public void initializeInstances() {
+        databaseManager = new DatabaseManager(this);
+        databaseService = new DatabaseService(getLogger(), databaseManager);
+        battleManager = new BattleManager(this, databaseService);
+        battleClock = new BattleClock(this, battleManager);
+    }
+
     /** Initialize Event Listeners. */
     private void initializeListeners() {
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialize"));
@@ -247,7 +265,7 @@ public class FlagWar extends JavaPlugin {
         flagWarEntityListener = new FlagWarEntityListener();
         warzoneListener = new WarzoneListener();
         outlawListener = new OutlawListener();
-        battleListener = new BattleListener(this);
+        battleListener = new BattleListener(battleManager);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialized"));
     }
 

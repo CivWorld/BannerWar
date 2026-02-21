@@ -41,4 +41,47 @@ public final class FormatUtil {
         final int seconds = duration.toSecondsPart();
         return String.format(formatString, seconds, minutes, hours);
     }
+
+
+    /**
+     * Returns the noun with an "s" at the end if the count is not 1, and the count preceding it. <br> <br>
+     * For example, the word "apples" and a count of 4 will return "4 apples".
+     * Additionally, the word "banana" and a count of 1 will return "1 banana". <br> <br>
+     * This function does not work for irregular plurals. <br>
+     * For example, the word "mouse" and a count of 3 will return "3 mouses" and not "3 mice".
+     * @param word the singular noun
+     * @param count the number of items
+     */
+    public static String tryPluralize(String word, int count) {
+        String out = count == 1 ? word : word + "s";
+        return count + " " + out;
+    }
+
+    /**
+     * Returns a formatted {@link String} to represent the specified {@link Duration}. <br> <br>
+     * For example, a duration of 3.5 minutes returns "3 minutes 30 seconds". <br>
+     * Additionally, a duration of 3 days and 0 hours and 1 minute returns "3 days 1 minute".
+     * @param duration the specified {@link Duration}
+     */
+    public static String getFormattedTime(Duration duration) {
+        String daysPart = duration.toDaysPart() > 0 ? tryPluralize("day", Math.toIntExact(duration.toDaysPart())) : "";
+        String hoursPart = duration.toHoursPart() > 0 ? tryPluralize("hour", duration.toHoursPart()) : "";
+        String minutesPart = duration.toMinutesPart() > 0 ? tryPluralize("minute", duration.toMinutesPart()) : "";
+        String secondsPart = duration.toSecondsPart() > 0 ? tryPluralize("second", duration.toSecondsPart()) : "";
+        String out = "";
+
+        if (!daysPart.isEmpty())
+            out = out + daysPart + " ";
+
+        if (!hoursPart.isEmpty())
+            out = out + hoursPart + " ";
+
+        if (!minutesPart.isEmpty())
+            out = out + minutesPart + " ";
+
+        if (!secondsPart.isEmpty())
+            out = out + secondsPart;
+
+        return out.trim();
+    }
 }

@@ -61,7 +61,7 @@ public final class BannerWarUtil {
      * Computes the stage times of a {@link Battle} based on its initial {@link TownBlock} count and a configurable multiplier.
      * @param b the {@link Battle} in question
      */
-    public static EnumMap<BattleStage, Duration> computeStageTimes(Battle b) {
+    public static Map<BattleStage, Duration> computeStageTimes(Battle b) {
         EnumMap<BattleStage, Duration> stageTimes = new EnumMap<>(BattleStage.class);
 
         int size = b.getInitialTownBlocks().size();
@@ -72,5 +72,13 @@ public final class BannerWarUtil {
         stageTimes.put(BattleStage.DORMANT, Duration.ofDays((long) Math.ceil(size/30.0) + 1));
 
         return stageTimes;
+    }
+
+    /**
+     * Returns the {@link BattleStage#PRE_FLAG} and {@link BattleStage#FLAG} durations added.
+     * @param b the {@link Battle}.
+     */
+    public static Duration getActivePeriod(Battle b) {
+        return b.getDuration(BattleStage.PRE_FLAG).plus(b.getDuration(BattleStage.FLAG));
     }
 }
