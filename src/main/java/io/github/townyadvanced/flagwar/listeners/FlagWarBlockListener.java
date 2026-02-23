@@ -21,7 +21,7 @@ import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.event.actions.TownyActionEvent;
 import com.palmergames.bukkit.towny.object.*;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.Broadcasts;
+import io.github.townyadvanced.flagwar.util.Broadcasts;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
 import org.bukkit.ChatColor;

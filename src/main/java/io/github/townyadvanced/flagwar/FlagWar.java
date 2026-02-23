@@ -41,7 +41,7 @@ import io.github.townyadvanced.flagwar.command.todelete;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.database.DatabaseManager;
-import io.github.townyadvanced.flagwar.database.DatabaseService;
+import io.github.townyadvanced.flagwar.database.DatabaseRetrieval;
 import io.github.townyadvanced.flagwar.events.CellAttackCanceledEvent;
 import io.github.townyadvanced.flagwar.events.CellAttackEvent;
 import io.github.townyadvanced.flagwar.events.CellDefendedEvent;
@@ -56,6 +56,7 @@ import java.io.IOException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.spec.RSAOtherPrimeInfo;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,9 +67,11 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.github.townyadvanced.flagwar.util.Broadcasts;
 import io.github.townyadvanced.flagwar.util.Messaging;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -127,8 +130,8 @@ public class FlagWar extends JavaPlugin {
     private BattleListener battleListener;
     /** Holds instance of the {@link DatabaseManager}. */
     private DatabaseManager databaseManager;
-    /** Holds instance of the {@link DatabaseService}. */
-    private DatabaseService databaseService;
+    /** Holds instance of the {@link DatabaseRetrieval}. */
+    private DatabaseRetrieval databaseRetrieval;
     /** Holds instance of the {@link BattleClock}. */
     private BattleClock battleClock;
     /** Holds instance of the {@link BattleManager}. */
@@ -254,8 +257,8 @@ public class FlagWar extends JavaPlugin {
     /** Initialize Instances. */
     public void initializeInstances() {
         databaseManager = new DatabaseManager(this);
-        databaseService = new DatabaseService(getLogger(), databaseManager);
-        battleManager = new BattleManager(this, databaseService);
+        databaseRetrieval = new DatabaseRetrieval(getLogger(), databaseManager);
+        battleManager = new BattleManager(this, databaseRetrieval);
         battleClock = new BattleClock(this, battleManager);
     }
 
@@ -451,7 +454,7 @@ public class FlagWar extends JavaPlugin {
         }
     }
 
-    static List<CellUnderAttack> getCellsUnderAttackByPlayer(final String playerName) {
+    public static List<CellUnderAttack> getCellsUnderAttackByPlayer(final String playerName) {
         List<CellUnderAttack> cells = PLAYER_ATTACK_HASH_MAP.get(playerName);
         if (cells == null) {
             return new ArrayList<>(0);
@@ -484,8 +487,10 @@ public class FlagWar extends JavaPlugin {
      * <p>
      * If a Block is in the {@link FlagWarConfig#isAffectedMaterial(Material)} list and the Block's {@link Cell}
      * is under attack, evaluate if the Block is the flagTimerBlock, and if so: call
-     * {@link #attackDefended(Player, CellUnderAttack)} amd cancel the event. If it is not the flagTimerBlock, but does
+     * {@link #attackDefended(Player, CellUnderAttack)} and cancel the event. If it is not the flagTimerBlock, but does
      * match with {@link CellUnderAttack#isImmutableBlock(Block)}: cancel the event.
+     * <br> <br>
+     * [BannerWar] also decrements a life and checks if the number of lives reaches 0.
      *
      * @param player player to be registered as the attack defender.
      * @param block Block to evaluate
@@ -497,8 +502,15 @@ public class FlagWar extends JavaPlugin {
             if (cell.isUnderAttack()) {
                 CellUnderAttack cellAttackData = cell.getAttackData();
                 if (cellAttackData.isFlagTimer(block)) {
-                    FlagWar.attackDefended(player, cellAttackData);
+                    if (cellAttackData.decrementLife() == 0) {
+                        player.sendMessage("success " + cellAttackData.getLives());
+                        FlagWar.attackDefended(player, cellAttackData);
+                    }
+
+                    else Broadcasts.sendMessage(player, ChatColor.AQUA + "You have removed a life! Only " + cellAttackData.getLives() + " more to win this attack!");
+
                     event.setCancelled(true);
+
                 } else if (cellAttackData.isImmutableBlock(block)) {
                     event.setCancelled(true);
                 }

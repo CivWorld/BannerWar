@@ -8,7 +8,8 @@ import com.palmergames.bukkit.towny.event.actions.TownyBuildEvent;
 import com.palmergames.bukkit.towny.object.*;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.BattleManager;
-import io.github.townyadvanced.flagwar.Broadcasts;
+import io.github.townyadvanced.flagwar.objects.CellUnderAttack;
+import io.github.townyadvanced.flagwar.util.Broadcasts;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.events.*;
 import io.github.townyadvanced.flagwar.objects.Battle;
@@ -16,10 +17,16 @@ import io.github.townyadvanced.flagwar.objects.BattleStage;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
 import io.github.townyadvanced.flagwar.util.FormatUtil;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.Tag;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BattleListener implements Listener {
@@ -28,7 +35,7 @@ public class BattleListener implements Listener {
 
     /** The error message for a minimum number of players. */
     private static final String PLAYERS_ONLINE_ERROR =
-        ChatColor.RED + "There must be a minimum of %s online in %s for a battle to occur!";
+        "There must be a minimum of %s online in %s for a battle to occur!";
 
     public BattleListener(final JavaPlugin plugin) {
         this.PLUGIN = plugin;
@@ -62,72 +69,72 @@ public class BattleListener implements Listener {
 
         if (attacker.hasAlly(defender) || attacker.equals(defender)) return;
 
+        Battle battle = BannerWarAPI.getBattle(townBlock);
 
         if (!townBlock.getWorld().isWarAllowed()) {
-            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "The world is not allowed to war!");
+            Broadcasts.sendMessage(event.getPlayer(), "The world is not allowed to war!");
             return;
         }
 
         if (!town.isAllowedToWar()) {
-            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "The town is not allowed to war!");
+            Broadcasts.sendErrorMessage(event.getPlayer(),  "The town is not allowed to war!");
             return;
         }
 
         if (!FlagWarConfig.isAllowingAttacks()) {
-            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This server is not configured to allow attacks!");
+            Broadcasts.sendErrorMessage(event.getPlayer(), "This server is not configured to allow attacks!");
             return;
         }
 
-        if (defender == null) {
-            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This town is not part of a nation!");
+        if (defender == null && battle == null) {
+            Broadcasts.sendErrorMessage(event.getPlayer(), "This town is not part of a nation!");
             return;
         }
 
-        if (defender.isNeutral()) {
-            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "You cannot attack a peaceful nation!");
+
+        if (defender != null && defender.isNeutral()) {
+            Broadcasts.sendErrorMessage(event.getPlayer(), "You cannot attack a peaceful nation!");
             return;
         }
-
-        Battle battle = BannerWarAPI.getBattle(townBlock);
 
         if (battle != null) {
 
             if (battle.getCurrentStage() == BattleStage.DORMANT)
-                Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This town has recently been in a battle! " +
+                Broadcasts.sendErrorMessage(event.getPlayer(),  "This town has recently been in a battle! " +
                     "You can attack it again in " + FormatUtil.getFormattedTime(battle.getTimeRemainingForCurrentStage()) + ".");
             else
-                Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This town is already under a battle!");
+                Broadcasts.sendErrorMessage(event.getPlayer(),  "This town is already under a battle!");
 
             return;
         }
 
         if (!attacker.hasEnemy(defender)) {
-            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "You are not enemies with this nation!");
+            Broadcasts.sendErrorMessage(event.getPlayer(), "You are not enemies with this nation!");
             return;
         }
 
         if (onlineResidents < minOnInTown) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInTown), town.getName()));
+            Broadcasts.sendErrorMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInTown), town.getName()));
             return;
         }
 
         if (onlineResidents < minOnInNation) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInNation), defender.getName()));
+            Broadcasts.sendErrorMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInNation), defender.getName()));
             return;
         }
 
         if (onlineResidents < minOnInAttackerNation) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInAttackerNation), attacker));
+            Broadcasts.sendErrorMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInAttackerNation), attacker));
             return;
         }
 
         if (onlineResidents < minOnInAttackerTown) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInAttackerTown), r.getTownOrNull().getName()));
+            Broadcasts.sendErrorMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInAttackerTown), r.getTownOrNull().getName()));
             return;
         }
 
         if (!town.hasHomeBlock()) {
-            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This town does not contain a home block!");
+            Broadcasts.sendErrorMessage(event.getPlayer(), "This town does not contain a home block!");
             return;
         }
 
@@ -192,7 +199,7 @@ public class BattleListener implements Listener {
     public void onTownBlockClaim(TownPreClaimEvent e) {
         if (BannerWarAPI.isInBattle(e.getTown()) && BannerWarAPI.isNotDormant(e.getTown())) {
             e.setCancelled(true);
-            e.setCancelMessage(ChatColor.RED + "You cannot claim town blocks while under battle!");
+            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot claim town blocks while under battle!"));
         }
     }
 
@@ -203,7 +210,7 @@ public class BattleListener implements Listener {
             PLUGIN.getLogger().warning("The flag placed by " + e.getData().getNameOfFlagOwner() + " is flagging during a null battle!");
             return;
         }
-        battle.addFlag(e.getData());
+        battle.addFlag(e.getData().getNameOfFlagOwner());
     }
 
     @EventHandler
@@ -221,7 +228,7 @@ public class BattleListener implements Listener {
             e.setCancelled(true);
             battle.loseDefense();
         }
-        else battle.removeFlag(c);
+        else battle.removeFlag(c.getNameOfFlagOwner());
     }
 
     @EventHandler
@@ -235,6 +242,44 @@ public class BattleListener implements Listener {
             return;
         }
 
-        battle.removeFlag(c.getAttackData());
+        battle.removeFlag(c.getAttackData().getNameOfFlagOwner());
+    }
+
+    @EventHandler
+    public void onAddFlagLife(PlayerInteractEvent e) {
+
+        Block b = e.getClickedBlock();
+        Resident adder = TownyAPI.getInstance().getResident(e.getPlayer());
+
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND && b != null) {
+
+            TownBlock tb = TownyAPI.getInstance().getTownBlock(b.getLocation());
+            Battle battle = BannerWarAPI.getBattle(tb);
+
+            if (adder != null && tb != null && battle != null) {
+                CellUnderAttack cell = battle.getCellUnderAttack(tb.getX(), tb.getZ());
+
+                if (cell != null) {
+                    Resident placer = TownyAPI.getInstance().getResident(cell.getNameOfFlagOwner());
+
+                    if (adder.isAlliedWith(placer) && !adder.getNationRanks().isEmpty()) {
+                        ItemStack held = e.getPlayer().getInventory().getItemInMainHand();
+
+                        if (held.getType() == Material.GOLD_INGOT) {
+
+                            if (cell.tryAddLife())
+                                Broadcasts.sendMessage(e.getPlayer(), ChatColor.GREEN + "You have added a life!");
+                            else {
+                                Broadcasts.sendErrorMessage(e.getPlayer(), "You cannot add any more lives!");
+                                return;
+                            }
+
+                            held.setAmount(held.getAmount() - 1);
+                            e.getPlayer().getInventory().setItemInMainHand(held);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

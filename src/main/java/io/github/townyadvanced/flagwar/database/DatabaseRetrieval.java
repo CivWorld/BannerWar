@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
-public final class DatabaseService {
+public final class DatabaseRetrieval {
 
     /** Holds the name of the battle table. */
     private static final String BATTLE_TABLE = "Battle";
@@ -22,7 +22,7 @@ public final class DatabaseService {
     /** Holds the {@link Logger} of this class. */
     private final Logger LOGGER;
 
-    public DatabaseService(Logger logger, DatabaseManager manager) {
+    public DatabaseRetrieval(Logger logger, DatabaseManager manager) {
         this.MANAGER = manager;
         this.LOGGER = logger;
     }
@@ -30,14 +30,11 @@ public final class DatabaseService {
     public CompletableFuture<Collection<BattleRecord>> getBattles() {
 
         return CompletableFuture.supplyAsync(() -> {
-            System.out.println("called db function");
             Collection<BattleRecord> battles = new ArrayList<>();
             String query = "SELECT * FROM " + BATTLE_TABLE;
             try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
-                System.out.println("trying execute");
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        // TODO fix this database not allowing wars of size 1
                         battles.add(new BattleRecord(
                             rs.getString(1),
                             rs.getString(2),

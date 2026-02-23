@@ -29,8 +29,8 @@ public class Battle {
     /** Holds the {@link Town} at which the battle is held. */
     private final Town CONTESTED_TOWN;
 
-    /** Holds a {@link List} of {@link CellUnderAttack}s relevant to this battle. */
-    private final List<CellUnderAttack> flags;
+    /** Holds a {@link List} of {@link String}s of every player that has placed a {@link CellUnderAttack} relevant to this battle. */
+    private final List<String> flags;
 
     /** Holds the critical {@link TownBlock} that, when won, ends the battle. */
     private final TownBlock HOME_BLOCK;
@@ -208,14 +208,18 @@ public class Battle {
         return isCityState;
     }
 
-    /** Adds a new {@link CellUnderAttack} to the list of flags. */
-    public void addFlag(CellUnderAttack attackData) {
-        flags.add(attackData);
+    /** Adds a new flag to the list of flags.
+     * @param name the name of the flag owner
+     */
+    public void addFlag(String name) {
+        flags.add(name);
     }
 
-    /** Removes an existing {@link CellUnderAttack} from the list of flags. */
-    public void removeFlag(CellUnderAttack attackData) {
-        flags.remove(attackData);
+    /** Removes an existing flag from the list of flags.
+     * @param name the name of the flag owner
+     */
+    public void removeFlag(String name) {
+        flags.remove(name);
     }
 
     /**
@@ -289,7 +293,7 @@ public class Battle {
     /** Procedures to be performed at the end of a war, regardless of the result, such as transferring ownership of {@link TownBlock}s back and cancelling ongoing flags. */
     private void endWarProcedures() {
 
-        for (CellUnderAttack c : flags) FlagWar.removeAttackerFlags(c.getNameOfFlagOwner());
+        for (String n : flags) FlagWar.removeAttackerFlags(n);
 
         transferBlockOwnership(getContestedTown(), getInitialTownBlocks(), getHomeBlock());
     }
@@ -380,5 +384,27 @@ public class Battle {
         if (getAttacker() != null) relevantNations.addAll(getAttacker().getAllies());
 
         return relevantNations.contains(r.getTownOrNull().getNationOrNull()) || getContestedTown().getResidents().contains(r);
+    }
+
+    /**
+     * Returns the {@link CellUnderAttack} with the specified X and Z chunk coordinates.
+     * @param x the X coordinate
+     * @param z the Z coordinate
+     */
+    public CellUnderAttack getCellUnderAttack(int x, int z) {
+        for (var name : flags) {
+            CellUnderAttack cua = FlagWar.getCellsUnderAttackByPlayer(name).get(0); // there is only one flag per player.
+            if (cua.getX() ==  x && cua.getZ() == z)
+                return cua;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets every flag's flag owner associated with this {@link Battle}.
+     */
+    public Collection<String> getCellsUnderAttack() {
+        return flags;
     }
 }

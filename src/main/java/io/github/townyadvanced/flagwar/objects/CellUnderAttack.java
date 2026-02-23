@@ -77,6 +77,10 @@ public class CellUnderAttack extends Cell {
     private ScheduledTask hologramTask;
     /** Holds the time, in seconds, assuming 20 ticks is 1 second, of the war flag. */
     private Duration flagLifeTime;
+    /** Holds the initial number of lives the {@link CellUnderAttack} has, excluding any external flag life increases. */
+    private int lives = 1;
+    /** Holds the number of lives that have been added to the {@link CellUnderAttack} since its construction. */
+    private int lifeAdditions = 0;
 
     /**
      * Prepares the CellUnderAttack.
@@ -214,13 +218,15 @@ public class CellUnderAttack extends Cell {
     /** @return TRUE if the {@link #flagPhaseID} is equal or greater than the length of
      * {@link FlagWarConfig#getTimerBlocks()} */
     public boolean hasEnded() {
-        return flagPhaseID >= FlagWarConfig.getTimerBlocks().length;
+        return flagPhaseID >= FlagWarConfig.getTimerBlocks().length && (flagLifeTime.isNegative() || flagLifeTime.isZero());
     }
 
     /** Function to increment the {@link #flagPhaseID} and then run {@link #updateFlag()}. */
     public void changeFlag() {
-        flagPhaseID += 1;
-        updateFlag();
+        if (flagPhaseID < FlagWarConfig.getTimerBlocks().length) {
+            updateFlag();
+            flagPhaseID += 1;
+        }
     }
 
     /**
@@ -403,5 +409,34 @@ public class CellUnderAttack extends Cell {
      */
     public boolean isImmutableBlock(final Block block) {
         return isPartOfBeacon(block) || isFlagBase(block) || isFlagLight(block);
+    }
+
+    /**
+     * Tries to add a life to the {@link CellUnderAttack}, respecting that it may have exceeded the permissible number of {@link CellUnderAttack#lifeAdditions}.
+     * @return whether a life has been added
+     */
+    public boolean tryAddLife() {
+        if (lifeAdditions == 3) return false;
+
+        flagLifeTime = flagLifeTime.plusSeconds(5);
+
+        lives++;
+        lifeAdditions++;
+        return true;
+    }
+
+    /**
+     * Returns the number of lives this {@link CellUnderAttack} has.
+     */
+    public int getLives() {
+        return lives;
+    }
+
+    /**
+     * Decrements the {@link CellUnderAttack#lives} by 1.
+     * @return the new number of lives
+     */
+    public int decrementLife() {
+        return --lives;
     }
 }

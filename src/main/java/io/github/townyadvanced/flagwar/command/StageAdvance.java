@@ -1,7 +1,7 @@
 package io.github.townyadvanced.flagwar.command;
 
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.Broadcasts;
+import io.github.townyadvanced.flagwar.util.Broadcasts;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

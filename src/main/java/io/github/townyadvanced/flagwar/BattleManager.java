@@ -2,7 +2,7 @@ package io.github.townyadvanced.flagwar;
 
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
-import io.github.townyadvanced.flagwar.database.DatabaseService;
+import io.github.townyadvanced.flagwar.database.DatabaseRetrieval;
 import io.github.townyadvanced.flagwar.events.BattleStartEvent;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleRecord;
@@ -15,8 +15,8 @@ import java.util.Map;
 
 public final class BattleManager {
 
-    /** Holds the {@link DatabaseService} instance. */
-    private final DatabaseService DATABASE_SERVICE;
+    /** Holds the {@link DatabaseRetrieval} instance. */
+    private final DatabaseRetrieval DATABASE_RETRIEVAL;
 
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
@@ -24,8 +24,8 @@ public final class BattleManager {
     /** Holds a {@link HashMap} of every {@link Battle} and its associated contested town's name. */
     private static final Map<String, Battle> ACTIVE_BATTLES = new HashMap<>();
 
-    public BattleManager(JavaPlugin plugin, DatabaseService databaseService) {
-        DATABASE_SERVICE = databaseService;
+    public BattleManager(JavaPlugin plugin, DatabaseRetrieval databaseRetrieval) {
+        DATABASE_RETRIEVAL = databaseRetrieval;
         PLUGIN = plugin;
         resumeBattles();
     }
@@ -36,7 +36,7 @@ public final class BattleManager {
     private void resumeBattles() {
         ACTIVE_BATTLES.clear();
 
-        DATABASE_SERVICE.getBattles().thenAccept(battleRecords -> {
+        DATABASE_RETRIEVAL.getBattles().thenAccept(battleRecords -> {
             for (BattleRecord r : battleRecords) {
                 ACTIVE_BATTLES.put(r.contestedTown(), new Battle(r));
                 PLUGIN.getLogger().info("Battle " + r.contestedTown() + " has been resumed");
@@ -62,7 +62,7 @@ public final class BattleManager {
 
             battle.updateBossBar();
 
-            DATABASE_SERVICE.insertOrUpdate(BattleRecord.of(battle));
+            DATABASE_RETRIEVAL.insertOrUpdate(BattleRecord.of(battle));
         }
     }
 

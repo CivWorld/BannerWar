@@ -123,14 +123,14 @@ holograms:
             data: DIAMOND_SWORD
         1:
             type: text
-            data: "&c&Battle Flag"
+            data: "&c&lBattle Flag"
         2:
             type: timer
             data: "&aTime Left: %2$d:%1$02d"
 
 # Define Beacon Structure
 beacon:
-    draw: false
+    draw: true
     radius: 3
     height_above_flag.min: 3
     height_above_flag.max: 64
