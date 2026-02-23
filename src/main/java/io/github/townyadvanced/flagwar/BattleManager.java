@@ -9,7 +9,7 @@ import io.github.townyadvanced.flagwar.objects.BattleRecord;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,22 +45,25 @@ public final class BattleManager {
     }
 
     /**
+     * Returns every currently ongoing battle, dormant or not.
+     */
+    public static Collection<Battle> getActiveBattles() {
+        return ACTIVE_BATTLES.values();
+    }
+
+    /**
      * Refreshes the battles' states, and saves them to the database.
      */
     public void updateBattles() {
-            DATABASE_SERVICE.reset().thenRun(() -> { // okay so this function might be a bad idea.
-                // figure out why its not carrying battles over.
-                // todo figure out this cellunderattack issue dawg
+        for (Map.Entry<String, Battle> entry : ACTIVE_BATTLES.entrySet()) {
+            Battle battle = entry.getValue();
 
-            for (Map.Entry<String, Battle> entry : ACTIVE_BATTLES.entrySet()) {
-                Battle battle = entry.getValue();
+            if (battle.isPendingStageAdvance()) battle.advanceStage(true);
 
-                if (battle.isPendingStageAdvance())
-                    battle.advanceStage(true);
+            battle.updateBossBar();
 
-                DATABASE_SERVICE.insertOrUpdate(BattleRecord.of(battle));
-            }
-        });
+            DATABASE_SERVICE.insertOrUpdate(BattleRecord.of(battle));
+        }
     }
 
     /**
@@ -69,7 +72,7 @@ public final class BattleManager {
      * @param attacker the nation that initiated the {@link Battle}
      * @param defender the nation that houses the {@link Town} where the {@link Battle} is hosted
      */
-    public void startBattle(Town contestedTown, Nation attacker, Nation defender) {
+    public static void startBattle(Town contestedTown, Nation attacker, Nation defender) {
 
         Battle battle = new Battle(attacker, defender, contestedTown, false);
         ACTIVE_BATTLES.put(contestedTown.getName(), battle);
@@ -108,5 +111,13 @@ public final class BattleManager {
      */
     public static void removeBattle(String townName) {
         ACTIVE_BATTLES.remove(townName);
+    }
+
+    /**
+     * Removes the boss bar of every {@link Battle} to prevent duplicates.
+     */
+    public static void deleteBossBars() {
+        for (var battle : ACTIVE_BATTLES.values()) battle.deleteBossBar();
+
     }
 }

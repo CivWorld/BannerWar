@@ -35,9 +35,9 @@ public class StageAdvance implements CommandExecutor {
                 return true;
             }
 
-            else if (BannerWarAPI.isInBattle(townName)) {
+            else if (BannerWarAPI.getBattle(townName) != null) {
                 BannerWarAPI.getBattle(townName).advanceStage(toWin);
-                Broadcasts.sendMessage(p, ChatColor.GREEN + "Advanced phase for " + townName + "!");
+                Broadcasts.sendMessage(p, ChatColor.GREEN + "Advanced stage for " + townName + "!");
             }
             else {
                 Broadcasts.sendMessage(p, ChatColor.RED + townName + " is not in a battle or does not exist!");
@@ -46,9 +46,9 @@ public class StageAdvance implements CommandExecutor {
         }
 
         else {
-            if (BannerWarAPI.isInBattle(townName)) {
+            if (BannerWarAPI.getBattle(townName) != null) {
                 BannerWarAPI.getBattle(townName).advanceStage(toWin);
-                PLUGIN.getLogger().info("Advanced phase for " + townName + "!");
+                PLUGIN.getLogger().info("Advanced stage for " + townName + "!");
             }
             else {
                 PLUGIN.getLogger().warning(townName + " is not in a battle or does not exist!");

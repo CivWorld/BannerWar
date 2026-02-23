@@ -11,9 +11,9 @@ import org.bukkit.World;
 import java.time.Duration;
 import java.util.*;
 
-public final class BannerWarUtil {
+public final class BattleUtil {
 
-    private BannerWarUtil() {}
+    private BattleUtil() {}
 
     /** Holds the delimiter used for splitting {@link String}s. */
     private static final String DELIMITER = ":";
@@ -28,6 +28,8 @@ public final class BannerWarUtil {
      */
     public static Collection<TownBlock> toBlockList(String worldID, String listToSplit) {
         World world = Bukkit.getServer().getWorld(UUID.fromString(worldID));
+        if (world == null) return new ArrayList<>();
+
         List<TownBlock> blocks = new ArrayList<>();
         String[] chunks = listToSplit.split(DELIMITER);
 
@@ -35,6 +37,7 @@ public final class BannerWarUtil {
             String[] block = chunk.split(CHUNK_DELIMITER);
             int x = Integer.parseInt(block[0]);
             int z = Integer.parseInt(block[1]);
+
 
             blocks.add(TownyAPI.getInstance().getTownBlock(
                 new WorldCoord(world, x, z)

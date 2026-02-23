@@ -37,6 +37,7 @@ import com.palmergames.bukkit.util.Version;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
+import io.github.townyadvanced.flagwar.command.todelete;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.database.DatabaseManager;
@@ -72,7 +73,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.entity.Bat;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.plugin.Plugin;
@@ -161,6 +161,7 @@ public class FlagWar extends JavaPlugin {
 
             new TownyAdminReloadAddon();
             getCommand("StageAdvance").setExecutor(new StageAdvance(this));
+            getCommand("GetBattles").setExecutor(new todelete());
 
         }
     }
@@ -189,6 +190,7 @@ public class FlagWar extends JavaPlugin {
         FW_LOGGER.log(Level.INFO, () -> Translate.from("shutdown.cancel-all"));
 
         battleClock.kill();
+        BattleManager.deleteBossBars();
 
         if (!ATTACK_HASH_MAP.isEmpty()) {
             for (CellUnderAttack cell : new ArrayList<>(ATTACK_HASH_MAP.values())) {
@@ -265,7 +267,7 @@ public class FlagWar extends JavaPlugin {
         flagWarEntityListener = new FlagWarEntityListener();
         warzoneListener = new WarzoneListener();
         outlawListener = new OutlawListener();
-        battleListener = new BattleListener(battleManager);
+        battleListener = new BattleListener(this);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialized"));
     }
 

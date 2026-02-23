@@ -5,10 +5,15 @@ import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.utils.TownRuinUtil;
 import io.github.townyadvanced.flagwar.BattleManager;
+import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.events.BattleEndEvent;
-import io.github.townyadvanced.flagwar.events.BattleFlagEvent;
-import io.github.townyadvanced.flagwar.util.BannerWarUtil;
+import io.github.townyadvanced.flagwar.events.BattleFlaggableEvent;
+import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Player;
 
 import java.time.Duration;
 import java.util.*;
@@ -25,7 +30,7 @@ public class Battle {
     private final Town CONTESTED_TOWN;
 
     /** Holds a {@link List} of {@link CellUnderAttack}s relevant to this battle. */
-    private List<CellUnderAttack> flags;
+    private final List<CellUnderAttack> flags;
 
     /** Holds the critical {@link TownBlock} that, when won, ends the battle. */
     private final TownBlock HOME_BLOCK;
@@ -48,9 +53,11 @@ public class Battle {
     /** Holds whether this battle's {@link #CONTESTED_TOWN} is a City State or not. */
     private final boolean isCityState;
 
+    /** Holds the {@link BossBar} of this battle. */
+    private BossBar bossBar;
+
     /**
      * Sets up a battle between an attacking nation and a defending nation. <br>
-     * This battle constructor is mainly for resuming an existing battle.
      * @param attacker the attacking nation
      * @param defender the defending nation
      * @param contestedTown the town at which the battle is held
@@ -72,7 +79,9 @@ public class Battle {
         this.stage = stage;
         this.HOME_BLOCK = homeBlock;
         this.INITIAL_MAYOR = initialMayor;
-        STAGE_DURATIONS = BannerWarUtil.computeStageTimes(this);
+        STAGE_DURATIONS = BattleUtil.computeStageTimes(this);
+
+        createBossBar();
     }
 
     /**
@@ -84,19 +93,16 @@ public class Battle {
      * @param isCityState whether this battle's town is a City State or not.
      */
     public Battle(Nation attacker, Nation defender, Town contestedTown, boolean isCityState) {
-        this.ATTACKER = attacker;
-        this.DEFENDER = defender;
-        this.CONTESTED_TOWN = contestedTown;
-        this.flags = new ArrayList<>();
-        this.INITIAL_TOWN_BLOCKS = new ArrayList<>(contestedTown.getTownBlocks());
-        this.stageStartTimeMillis = System.currentTimeMillis();
-        this.isCityState = isCityState;
-        this.stage = BattleStage.PRE_FLAG;
-        this.INITIAL_MAYOR = contestedTown.getMayor();
-
-        // shouldn't be null as an existing home block is a requirement for a war to be initiated.
-        this.HOME_BLOCK = contestedTown.getHomeBlockOrNull();
-        STAGE_DURATIONS = BannerWarUtil.computeStageTimes(this);
+        this(attacker,
+            defender,
+            contestedTown,
+            new ArrayList<>(contestedTown.getTownBlocks()),
+            System.currentTimeMillis(),
+            contestedTown.getHomeBlockOrNull(),
+            isCityState,
+            BattleStage.PRE_FLAG,
+            contestedTown.getMayor()
+        );
     }
 
     /**
@@ -105,13 +111,13 @@ public class Battle {
      * @param br the {@link BattleRecord} from a database or another persistent storage
      */
     public Battle(BattleRecord br) {
-        this(TownyAPI.getInstance().getNation(br.attacker()),
-            TownyAPI.getInstance().getNation(br.defender()),
+        this(!br.attacker().equals("_") ? TownyAPI.getInstance().getNation(br.attacker()) : null,
+            !br.defender().equals("_") ? TownyAPI.getInstance().getNation(br.defender()) : null,
             TownyAPI.getInstance().getTown(br.contestedTown()),
             br.townBlocks(),
             br.stageStartTime(),
             TownyAPI.getInstance().getTownBlock(
-                new WorldCoord(Bukkit.getWorld(br.worldID()), br.homeX(), br.homeZ())),
+            new WorldCoord(Bukkit.getWorld(br.worldID()), br.homeX(), br.homeZ())),
             br.isCityState(),
             br.stage(),
             TownyAPI.getInstance().getResident(br.initialMayorID())
@@ -151,9 +157,17 @@ public class Battle {
         return STAGE_DURATIONS.getOrDefault(s, null);
     }
 
-    /** Returns the list of {@link TownBlock}s that belonged to this {@link #CONTESTED_TOWN} before the battle. */
+    /** Returns the {@link Collection} of {@link TownBlock}s that belonged to this {@link #CONTESTED_TOWN} before the battle. */
     public Collection<TownBlock> getInitialTownBlocks() {
         return INITIAL_TOWN_BLOCKS;
+    }
+
+    /** Returns the {@link Collection} of {@link TownBlock}s that have been captured by the {@link #ATTACKER} during the battle. */
+    public Collection<TownBlock> getCapturedTownBlocks() {
+        Collection<TownBlock> out = getInitialTownBlocks();
+        out.removeAll(getContestedTown().getTownBlocks());
+
+        return out;
     }
 
     /** Returns the {@link Duration} left for the current {@link BattleStage}.
@@ -161,7 +175,7 @@ public class Battle {
      */
     public Duration getTimeRemainingForCurrentStage() {
         long elapsedMillis = System.currentTimeMillis() - stageStartTimeMillis;
-        Duration remainingTime = STAGE_DURATIONS.get(this.getStage()).minusMillis(elapsedMillis);
+        Duration remainingTime = STAGE_DURATIONS.get(getCurrentStage()).minusMillis(elapsedMillis);
         return remainingTime.isNegative() ? Duration.ZERO : remainingTime;
     }
 
@@ -171,7 +185,7 @@ public class Battle {
     }
 
     /** Returns the current {@link BattleStage} for this battle. */
-    public BattleStage getStage() {
+    public BattleStage getCurrentStage() {
         return stage;
     }
 
@@ -199,13 +213,18 @@ public class Battle {
         flags.add(attackData);
     }
 
+    /** Removes an existing {@link CellUnderAttack} from the list of flags. */
+    public void removeFlag(CellUnderAttack attackData) {
+        flags.remove(attackData);
+    }
+
     /**
      * Advances the stage of this battle to the next one.
      * @param win whether the battle is to be won by the {@link #DEFENDER} if the next stage ends it.
      */
     public void advanceStage(boolean win) {
         switch (stage) {
-            case PRE_FLAG -> beginFlag();
+            case PRE_FLAG -> makeFlaggable();
             case FLAG -> { if (win) winDefense(); else loseDefense(); }
             case RUINED -> unRuin();
             case DORMANT -> BattleManager.removeBattle(this);
@@ -215,9 +234,9 @@ public class Battle {
     /**
      *  The function to be called when the battle is to allow flags.
      */
-    public void beginFlag() {
-        stage = BattleStage.FLAG;
-        Bukkit.getPluginManager().callEvent(new BattleFlagEvent(this));
+    public void makeFlaggable() {
+        setStage(BattleStage.FLAG);
+        Bukkit.getPluginManager().callEvent(new BattleFlaggableEvent(this));
     }
 
     /**
@@ -230,28 +249,48 @@ public class Battle {
     }
 
     /**
+     * Returns whether this {@link Battle} is in its {@link BattleStage#PRE_FLAG} or {@link BattleStage#FLAG} states.
+     */
+    public boolean isActive() {
+        return getCurrentStage() == BattleStage.PRE_FLAG || getCurrentStage() == BattleStage.FLAG;
+    }
+
+    /**
      * The function to be called when a defense is won (time runs out before defense is won).
      */
     public void winDefense() {
         endWarProcedures();
-        setStage(BattleStage.DORMANT);
+        makeDormant();
         Bukkit.getPluginManager().callEvent(new BattleEndEvent(this, true));
+    }
+
+    /**
+     * Deletes the {@link Battle#bossBar} and sets the {@link Battle#stage} to {@link BattleStage#DORMANT}.
+     */
+    private void makeDormant() {
+        deleteBossBar();
+        setStage(BattleStage.DORMANT);
     }
 
     /** Puts the {@link #CONTESTED_TOWN} into a ruined state. */
     private void ruin() {
         setStage(BattleStage.RUINED);
-        TownRuinUtil.putTownIntoRuinedState(getContestedTown());
+        if (getContestedTown() != null)
+            TownRuinUtil.putTownIntoRuinedState(getContestedTown());
     }
 
-    /** Puts a town out of its ruined state and turns it {@link BattleStage#DORMANT}. */
+    /** Puts the {@link #CONTESTED_TOWN} out of its ruined state and turns it {@link BattleStage#DORMANT}. */
     private void unRuin() {
-        setStage(BattleStage.DORMANT);
-        TownRuinUtil.reclaimTown(getInitialMayor(), getContestedTown());
+        makeDormant();
+        if (getContestedTown().isRuined())
+            TownRuinUtil.reclaimTown(getInitialMayor(), getContestedTown());
     }
 
-    /** Procedures to be performed at the end of a war, such as transferring ownership of {@link TownBlock}s back. */
+    /** Procedures to be performed at the end of a war, regardless of the result, such as transferring ownership of {@link TownBlock}s back and cancelling ongoing flags. */
     private void endWarProcedures() {
+
+        for (CellUnderAttack c : flags) FlagWar.removeAttackerFlags(c.getNameOfFlagOwner());
+
         transferBlockOwnership(getContestedTown(), getInitialTownBlocks(), getHomeBlock());
     }
 
@@ -275,5 +314,71 @@ public class Battle {
             TownyMessaging.sendErrorMsg(E.getMessage());
             E.printStackTrace();
         }
+    }
+
+    /**
+     * Creates the {@link Battle#bossBar}.
+     */
+    private void createBossBar() {
+
+        String bossBarMessage = "[BATTLE] %s - %s"; // probably going to make this configurable?
+
+        bossBar = Bukkit.createBossBar(
+            String.format(bossBarMessage, getContestedTown().getName(), getCurrentStage().name().toUpperCase()),
+            BarColor.RED,
+            BarStyle.SOLID
+        );
+    }
+
+    /**
+     * Updates the {@link Battle#bossBar}.
+     */
+    public void updateBossBar() {
+
+        if (getCurrentStage() == BattleStage.DORMANT) return;
+
+        String bossBarMessage = "[BATTLE] %s - %s"; // probably going to make this configurable?
+
+        if (bossBar == null) return;
+
+        bossBar.setProgress(1.0 - (
+            (double) getTimeRemainingForCurrentStage().toSeconds() / getDuration(getCurrentStage()).toSeconds())
+        );
+
+        bossBar.setTitle(
+            String.format(bossBarMessage, getContestedTown().getName(), getCurrentStage().name().toUpperCase())
+        );
+
+        for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+            Resident r = TownyAPI.getInstance().getResident(p);
+            if (isParticipant(r)) bossBar.addPlayer(p);
+            else bossBar.removePlayer(p);
+        }
+    }
+
+    /**
+     * Deletes the {@link Battle#bossBar}.
+     */
+    public void deleteBossBar() {
+        if (bossBar == null) return;
+        bossBar.removeAll();
+        bossBar = null;
+    }
+
+    /**
+     * Returns whether a {@link Resident} is part of either the attacking {@link Nation}, defending {@link Nation} or one of their allies.
+     * @param r the {@link Resident} in question.
+     */
+    public boolean isParticipant(Resident r) {
+        Set<Nation> relevantNations = new HashSet<>();
+
+        if (r == null || r.getTownOrNull() == null || r.getNationOrNull() == null) return false;
+
+        relevantNations.add(getDefender());
+        relevantNations.add(getAttacker());
+        if (getDefender() != null) relevantNations.addAll(getDefender().getAllies());
+        if (getAttacker() != null) relevantNations.addAll(getAttacker().getAllies());
+
+        return relevantNations.contains(r.getTownOrNull().getNationOrNull()) || getContestedTown().getResidents().contains(r);
     }
 }

@@ -6,7 +6,7 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /** An event fired when a battle reaches its FLAG period and allows flagging. */
-public class BattleFlagEvent extends Event {
+public class BattleFlaggableEvent extends Event {
     private static final HandlerList h = new HandlerList();
 
     @Override
@@ -17,7 +17,7 @@ public class BattleFlagEvent extends Event {
 
     private final Battle battle;
 
-    public BattleFlagEvent(Battle battle) {
+    public BattleFlaggableEvent(Battle battle) {
         this.battle = battle;
     }
 

@@ -2,7 +2,7 @@ package io.github.townyadvanced.flagwar.database;
 
 import io.github.townyadvanced.flagwar.objects.BattleRecord;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
-import io.github.townyadvanced.flagwar.util.BannerWarUtil;
+import io.github.townyadvanced.flagwar.util.BattleUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -48,7 +48,7 @@ public final class DatabaseService {
                             rs.getBoolean(7),
                             BattleStage.valueOf(rs.getString(8)),
                             UUID.fromString(rs.getString(9)),
-                            BannerWarUtil.toBlockList(rs.getString(9), rs.getString(10)),
+                            BattleUtil.toBlockList(rs.getString(9), rs.getString(10)),
                             UUID.fromString(rs.getString(11))
                         ));
                     }
@@ -76,7 +76,7 @@ public final class DatabaseService {
                 ps.setBoolean(7, r.isCityState());
                 ps.setString(8, r.stage().name());
                 ps.setString(9, r.worldID().toString());
-                ps.setString(10, BannerWarUtil.fromBlockList(r.townBlocks()));
+                ps.setString(10, BattleUtil.fromBlockList(r.townBlocks()));
                 ps.setString(11, r.initialMayorID().toString());
 
                 if (ps.executeUpdate() > 0)
@@ -95,16 +95,16 @@ public final class DatabaseService {
             String query = "INSERT OR REPLACE INTO " + BATTLE_TABLE + " VALUES(?,?,?,?,?,?,?,?,?,?,?)";
             try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
 
-                ps.setString(1, r.attacker());
-                ps.setString(2, r.defender());
-                ps.setString(3, r.contestedTown());
+                ps.setString(1, r.contestedTown());
+                ps.setString(2, r.attacker());
+                ps.setString(3, r.defender());
                 ps.setInt(4, r.homeX());
                 ps.setInt(5, r.homeZ());
                 ps.setLong(6, r.stageStartTime());
                 ps.setBoolean(7, r.isCityState());
                 ps.setString(8, r.stage().name());
                 ps.setString(9, r.worldID().toString());
-                ps.setString(10, BannerWarUtil.fromBlockList(r.townBlocks()));
+                ps.setString(10, BattleUtil.fromBlockList(r.townBlocks()));
                 ps.setString(11, r.initialMayorID().toString());
 
                 if (ps.executeUpdate() <= 0)

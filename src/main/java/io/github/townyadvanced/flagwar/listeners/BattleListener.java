@@ -1,35 +1,37 @@
 package io.github.townyadvanced.flagwar.listeners;
 
 import com.palmergames.bukkit.towny.TownyAPI;
+import com.palmergames.bukkit.towny.event.DeleteNationEvent;
+import com.palmergames.bukkit.towny.event.DeleteTownEvent;
+import com.palmergames.bukkit.towny.event.TownPreClaimEvent;
 import com.palmergames.bukkit.towny.event.actions.TownyBuildEvent;
 import com.palmergames.bukkit.towny.object.*;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.BattleManager;
 import io.github.townyadvanced.flagwar.Broadcasts;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
-import io.github.townyadvanced.flagwar.events.BattleEndEvent;
-import io.github.townyadvanced.flagwar.events.BattleFlagEvent;
-import io.github.townyadvanced.flagwar.events.BattleStartEvent;
+import io.github.townyadvanced.flagwar.events.*;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
-import io.github.townyadvanced.flagwar.util.BannerWarUtil;
+import io.github.townyadvanced.flagwar.util.BattleUtil;
 import io.github.townyadvanced.flagwar.util.FormatUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.Tag;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public class BattleListener implements Listener {
 
-    private final BattleManager BMGR;
+    private final JavaPlugin PLUGIN;
 
     /** The error message for a minimum number of players. */
     private static final String PLAYERS_ONLINE_ERROR =
         ChatColor.RED + "There must be a minimum of %s online in %s for a battle to occur!";
 
-    public BattleListener(final BattleManager bmgr) {
-        BMGR = bmgr;
+    public BattleListener(final JavaPlugin plugin) {
+        this.PLUGIN = plugin;
     }
 
     @EventHandler (priority = EventPriority.HIGH)
@@ -41,13 +43,10 @@ public class BattleListener implements Listener {
             || !Tag.BANNERS.isTagged(event.getMaterial()))
                 return;
 
-        if (TownyAPI.getInstance().getResident(event.getPlayer().getUniqueId()) == null) return;
-
         Resident r = TownyAPI.getInstance().getResident(event.getPlayer().getUniqueId());
         Town town = townBlock.getTownOrNull();
 
-        if (town.getNationOrNull() == null
-            || r == null || r.getTownOrNull() == null
+        if (r == null || r.getTownOrNull() == null
             || r.getTownOrNull().getNationOrNull() == null)
                 return;
 
@@ -79,16 +78,21 @@ public class BattleListener implements Listener {
             return;
         }
 
+        if (defender == null) {
+            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This town is not part of a nation!");
+            return;
+        }
+
         if (defender.isNeutral()) {
             Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "You cannot attack a peaceful nation!");
             return;
         }
 
-        if (BannerWarAPI.isInBattle(town)) {
+        Battle battle = BannerWarAPI.getBattle(townBlock);
 
-            Battle battle = BattleManager.getBattle(town.getName());
+        if (battle != null) {
 
-            if (battle.getStage() ==  BattleStage.DORMANT)
+            if (battle.getCurrentStage() == BattleStage.DORMANT)
                 Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This town has recently been in a battle! " +
                     "You can attack it again in " + FormatUtil.getFormattedTime(battle.getTimeRemainingForCurrentStage()) + ".");
             else
@@ -103,28 +107,32 @@ public class BattleListener implements Listener {
         }
 
         if (onlineResidents < minOnInTown) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryPluralize("player", minOnInTown), town.getName()));
+            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInTown), town.getName()));
             return;
         }
 
         if (onlineResidents < minOnInNation) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryPluralize("player", minOnInNation), defender.getName()));
+            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInNation), defender.getName()));
             return;
         }
 
         if (onlineResidents < minOnInAttackerNation) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryPluralize("player", minOnInAttackerNation), attacker));
+            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInAttackerNation), attacker));
             return;
         }
 
         if (onlineResidents < minOnInAttackerTown) {
-            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryPluralize("player", minOnInAttackerTown), r.getTownOrNull().getName()));
+            Broadcasts.sendMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInAttackerTown), r.getTownOrNull().getName()));
+            return;
+        }
+
+        if (!town.hasHomeBlock()) {
+            Broadcasts.sendMessage(event.getPlayer(), ChatColor.RED + "This town does not contain a home block!");
             return;
         }
 
         event.setCancelled(false);
-        BMGR.startBattle(town, attacker, defender);
-
+        BattleManager.startBattle(town, attacker, defender);
     }
 
     @EventHandler
@@ -135,7 +143,7 @@ public class BattleListener implements Listener {
         Nation attacker = battle.getAttacker();
 
         Broadcasts.broadcastMessage( attacker.getName() + " has initiated a battle on " + defender.getName() + " at " + contestedTown.getName() + "!");
-        Broadcasts.broadcastMessage( "The battle will last " + FormatUtil.getFormattedTime(BannerWarUtil.getActivePeriod(battle)) + "!");
+        Broadcasts.broadcastMessage( "The battle will last " + FormatUtil.getFormattedTime(BattleUtil.getActivePeriod(battle)) + "!");
         System.out.println("Battle started! preflag is " + battle.getDuration(BattleStage.PRE_FLAG));
         System.out.println("flag is " + battle.getDuration(BattleStage.FLAG));
         System.out.println("together is " + battle.getDuration(BattleStage.FLAG).plus(battle.getDuration(BattleStage.PRE_FLAG)));
@@ -149,16 +157,84 @@ public class BattleListener implements Listener {
         String twn = battle.getContestedTown().getName();
 
         String message = event.isDefenseWon() ?
-            def + " has successfully defended " + att + " from " + twn + " and won the battle!" :
-            att + " has successfully conquered " + twn + " from " + def + "! The attacker now has free-range over the town!";
+            def + " has successfully defended " + twn + " from " + att + ". The defender is victorious!" :
+            att + " has defeated " + def + " in battle, and reduced " + twn + " to ruins! The attacker is victorious!";
 
         Broadcasts.broadcastMessage(message);
     }
 
     @EventHandler
-    public void onBeginFlag(BattleFlagEvent event) {
+    public void onFlaggable(BattleFlaggableEvent event) {
         Battle battle = event.getBattle();
+        System.out.println("time to begin flag!");
         Broadcasts.broadcastMessage(
             "The battle at " + battle.getContestedTown().getName() + " has begun its " + ChatColor.AQUA + "FLAG" + ChatColor.RESET + " state. Flags may now be placed!");
+    }
+
+    @EventHandler
+    public void onTownDisband(DeleteTownEvent e) {
+        for (var b : BattleManager.getActiveBattles()) {
+            if (!b.isActive()) return;
+            if (b.getContestedTown().getName().equals(e.getTownName())) b.loseDefense();
+        }
+    }
+
+    @EventHandler
+    public void onNationDisband(DeleteNationEvent e) {
+        for (var b : BattleManager.getActiveBattles()) {
+            if (!b.isActive()) return;
+            if (b.getAttacker().getName().equals(e.getNationName())) b.winDefense();
+            if (b.getDefender().getName().equals(e.getNationName())) b.loseDefense();
+        }
+    }
+
+    @EventHandler
+    public void onTownBlockClaim(TownPreClaimEvent e) {
+        if (BannerWarAPI.isInBattle(e.getTown()) && BannerWarAPI.isNotDormant(e.getTown())) {
+            e.setCancelled(true);
+            e.setCancelMessage(ChatColor.RED + "You cannot claim town blocks while under battle!");
+        }
+    }
+
+    @EventHandler
+    public void onFlagStart(CellAttackEvent e) {
+        Battle battle = BannerWarAPI.getBattle(TownyAPI.getInstance().getTownBlock(e.getFlagBlock().getLocation()));
+        if (battle == null) {
+            PLUGIN.getLogger().warning("The flag placed by " + e.getData().getNameOfFlagOwner() + " is flagging during a null battle!");
+            return;
+        }
+        battle.addFlag(e.getData());
+    }
+
+    @EventHandler
+    public void onFlagAttackWon(CellWonEvent e) {
+        var c = e.getCellUnderAttack();
+        TownBlock tb = TownyAPI.getInstance().getTownBlock(new WorldCoord(c.getWorldName(), c.getX(), c.getZ()));
+
+        Battle battle = BannerWarAPI.getBattle(tb);
+        if (battle == null) {
+            PLUGIN.getLogger().warning("The flag placed by " + e.getCellUnderAttack().getNameOfFlagOwner() + " is flagging during a null battle!");
+            return;
+        }
+
+        if (battle.getContestedTown().isHomeBlock(tb)) {
+            e.setCancelled(true);
+            battle.loseDefense();
+        }
+        else battle.removeFlag(c);
+    }
+
+    @EventHandler
+    public void onFlagAttackLost(CellDefendedEvent e) {
+        var c = e.getCell();
+        TownBlock tb = TownyAPI.getInstance().getTownBlock(new WorldCoord(c.getWorldName(), c.getX(), c.getZ()));
+
+        Battle battle = BannerWarAPI.getBattle(tb);
+        if (battle == null) {
+            PLUGIN.getLogger().warning("The flag" + c.getX() + "-" + c.getZ() + " is flagging during a null battle!");
+            return;
+        }
+
+        battle.removeFlag(c.getAttackData());
     }
 }

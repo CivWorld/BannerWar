@@ -109,7 +109,7 @@ timer_blocks:
 # Requires a supported hologram provider.
 holograms:
     # If true, and if a provider is present, holograms will appear when a war flag is placed.
-    enabled: false
+    enabled: true
     # Defines the lines of the hologram. The number indicates the line number. Starts at zero.
     # Use an item type to add a floating item.
     # Use a text type to add text.
@@ -123,14 +123,14 @@ holograms:
             data: DIAMOND_SWORD
         1:
             type: text
-            data: "&c&lWar Flag"
+            data: "&c&Battle Flag"
         2:
             type: timer
             data: "&aTime Left: %2$d:%1$02d"
 
 # Define Beacon Structure
 beacon:
-    draw: true
+    draw: false
     radius: 3
     height_above_flag.min: 3
     height_above_flag.max: 64

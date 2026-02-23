@@ -22,8 +22,8 @@ import com.palmergames.bukkit.towny.event.actions.TownyActionEvent;
 import com.palmergames.bukkit.towny.object.*;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.Broadcasts;
+import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
-import io.github.townyadvanced.flagwar.util.FormatUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -73,7 +73,7 @@ public class FlagWarBlockListener implements Listener {
         TownBlock townBlock = townyBuildEvent.getTownBlock();
         Resident r = TownyAPI.getInstance().getResident(townyBuildEvent.getPlayer());
 
-        if (townBlock != null) {
+        if (townBlock != null && townBlock.hasTown()) {
             Town town = townBlock.getTownOrNull();
             if (!townBlock.getWorld().isWarAllowed()
                 || (town == null || !town.isAllowedToWar())
@@ -88,17 +88,25 @@ public class FlagWarBlockListener implements Listener {
             Nation defender = town.getNationOrNull();
             Nation attacker = r.getTownOrNull().getNationOrNull();
 
-            if (attacker.hasAlly(defender) || attacker.equals(defender)) return;
+            Battle battle = BannerWarAPI.getBattle(townBlock);
 
-            if (!BannerWarAPI.isInBattle(town)) {
+            if (attacker.hasAlly(defender) || attacker.equals(defender)
+                && (battle == null || !battle.getCapturedTownBlocks().contains(townBlock))) return;
+
+            System.out.println("BATTLE " +  battle);
+
+            if (battle == null) {
                 Broadcasts.sendMessage(player, ChatColor.RED +
                     "You cannot flag a town that is not in a battle!");
                 return;
             }
 
-            if (!BannerWarAPI.canFlag(town)) {
-                Broadcasts.sendMessage(player, ChatColor.RED +
-                    "You cannot flag a town that is not in its " + ChatColor.AQUA + "FLAG" + ChatColor.RED + " state!");
+            if (!BannerWarAPI.canFlag(battle)) {
+
+                if (battle.getCurrentStage() != BattleStage.RUINED)
+                    Broadcasts.sendMessage(player, ChatColor.RED +
+                        "You cannot flag in a battle that is not in its " + ChatColor.AQUA + "FLAG" + ChatColor.RED + " state!");
+
                 return;
             }
 

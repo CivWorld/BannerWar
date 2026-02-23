@@ -37,11 +37,8 @@ public final class BattleClock {
     private void start() {
         CLOCK_TASK = SCHEDULER.runTaskTimer(
             PLUGIN,
-            () -> {
-                onCycle();
-            },
-            200,
-            200); // TODO: MAKE THIS CONFIGURABLE
+            this::onCycle,
+            20, 20); // TODO: MAKE THIS CONFIGURABLE
     }
 
     /**
