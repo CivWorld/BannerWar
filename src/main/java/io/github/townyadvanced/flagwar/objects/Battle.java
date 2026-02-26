@@ -6,6 +6,8 @@ import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.utils.TownRuinUtil;
 import io.github.townyadvanced.flagwar.BattleManager;
 import io.github.townyadvanced.flagwar.FlagWar;
+import io.github.townyadvanced.flagwar.chunk.ChunkCopy;
+import io.github.townyadvanced.flagwar.chunk.ChunkPaste;
 import io.github.townyadvanced.flagwar.events.BattleEndEvent;
 import io.github.townyadvanced.flagwar.events.BattleFlaggableEvent;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
@@ -82,6 +84,10 @@ public class Battle {
         STAGE_DURATIONS = BattleUtil.computeStageTimes(this);
 
         createBossBar();
+
+        var chunks = BattleUtil.toChunks(contestedTown.getTownBlocks(), contestedTown.getWorld());
+        ChunkCopy.getInstance().copy(BattleUtil.toChunkSnapshot(chunks));
+
     }
 
     /**
@@ -272,8 +278,11 @@ public class Battle {
      * Deletes the {@link Battle#bossBar} and sets the {@link Battle#stage} to {@link BattleStage#DORMANT}.
      */
     private void makeDormant() {
-        deleteBossBar();
         setStage(BattleStage.DORMANT);
+        deleteBossBar();
+
+        ChunkPaste.getInstance()
+            .paste(BattleUtil.toChunks(getInitialTownBlocks(), getContestedTown().getWorld()), getContestedTown().getWorld());
     }
 
     /** Puts the {@link #CONTESTED_TOWN} into a ruined state. */

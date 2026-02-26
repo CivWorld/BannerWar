@@ -48,10 +48,9 @@ public final class BannerWarAPI {
      */
     public static Battle getBattle(TownBlock townBlock) {
         for (Battle b : BattleManager.getActiveBattles())
-                if (b.getInitialTownBlocks().contains(townBlock)) {
-                    System.out.println("found tb equal townblock!");
+                if (b.getInitialTownBlocks().contains(townBlock))
                     return b;
-                }
+
         return null;
     }
 

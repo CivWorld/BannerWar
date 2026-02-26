@@ -6,6 +6,8 @@ import com.palmergames.bukkit.towny.object.WorldCoord;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.ChunkSnapshot;
 import org.bukkit.World;
 
 import java.time.Duration;
@@ -84,4 +86,29 @@ public final class BattleUtil {
     public static Duration getActivePeriod(Battle b) {
         return b.getDuration(BattleStage.PRE_FLAG).plus(b.getDuration(BattleStage.FLAG));
     }
+
+
+    /**
+     * Returns a {@link Collection} of the {@link ChunkSnapshot} counterparts to the provided {@link Chunk}s
+     * @param chunks the {@link Collection} of {@link Chunk}s
+     */
+    public static Collection<ChunkSnapshot> toChunkSnapshot(Collection<Chunk> chunks) {
+        Collection<ChunkSnapshot> out = new ArrayList<>();
+        for (Chunk c : chunks) out.add(c.getChunkSnapshot());
+        return out;
+    }
+
+    /**
+     * Returns a {@link Collection} of {@link Chunk}s that correspond to the provided {@link TownBlock}s.
+     * @param townBlocks the {@link Collection} of {@link TownBlock}s
+     * @param w the {@link World} where the {@link TownBlock}s reside
+     */
+    public static Collection<Chunk> toChunks(Collection<TownBlock> townBlocks, World w) {
+        Collection<Chunk> out = new ArrayList<>();
+        for (var tb : townBlocks)
+            out.add(w.getChunkAt(tb.getX(), tb.getZ()));
+
+        return out;
+    }
+
 }

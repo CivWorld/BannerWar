@@ -211,7 +211,7 @@ public class FlagWar extends JavaPlugin {
     @SuppressFBWarnings("DLS_DEAD_LOCAL_STORE")
     @SuppressWarnings({"unused", "java:S1854", "java:S1481"})
     private void bStatsKickstart() {
-        var metrics = new Metrics(this, METRICS_ID);
+        //var metrics = new Metrics(this, METRICS_ID);
     }
 
     private void checkTowny() {

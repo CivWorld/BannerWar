@@ -72,7 +72,7 @@ public class BattleListener implements Listener {
         Battle battle = BannerWarAPI.getBattle(townBlock);
 
         if (!townBlock.getWorld().isWarAllowed()) {
-            Broadcasts.sendMessage(event.getPlayer(), "The world is not allowed to war!");
+            Broadcasts.sendErrorMessage(event.getPlayer(), "The world is not allowed to war!");
             return;
         }
 
