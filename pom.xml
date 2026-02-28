@@ -105,6 +105,12 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.flintstqne</groupId>
+            <artifactId>townycivics</artifactId>
+            <version>1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.palmergames.bukkit.towny</groupId>
             <artifactId>towny</artifactId>
             <version>0.102.0.0</version>

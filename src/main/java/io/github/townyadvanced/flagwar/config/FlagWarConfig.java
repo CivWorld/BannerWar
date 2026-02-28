@@ -16,12 +16,15 @@
 
 package io.github.townyadvanced.flagwar.config;
 
+import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.util.Colors;
 import com.palmergames.util.TimeTools;
+import io.github.townyadvanced.flagwar.CivTechs;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.util.Messaging;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NonNls;
 
@@ -98,7 +101,8 @@ public final class FlagWarConfig {
         return Arrays.asList(TIMER_MATERIALS).contains(material)
             || material == getFlagBaseMaterial()
             || material == getFlagLightMaterial()
-            || material == getBeaconWireFrameMaterial();
+            || material == getBeaconWireFrameMaterial()
+            || material == Material.ANCIENT_DEBRIS; // TODO: MAKE CONFIGURABLE
     }
 
     /**
@@ -355,6 +359,18 @@ public final class FlagWarConfig {
         return Duration.ofSeconds(TimeTools.getSeconds(lifeTime));
     }
 
+    public static Duration getFlagLifeTime(Player p) {
+
+        Duration out = getFlagLifeTime();
+        if (CivTechs.isTechPresent(CivTechs.ATTRITION_DOCTRINE, p))
+            out = out.plusSeconds(10);
+
+        return out;
+
+    }
+
+
+
     /**
      * Check if extra "debug" messages should be written to the JUL logger on the WARN level.
      * <p>
@@ -370,6 +386,19 @@ public final class FlagWarConfig {
      * @return The Flag Life-time, divided by the length of {@link #getTimerBlocks()}.
      */
     public static Duration getFlagPhasesDuration() {
+        return getFlagLifeTime().dividedBy(getTimerBlocks().length);
+    }
+
+
+    /**
+     * Get the {@link Duration} of each timer-material phase in a war flag's lifecycle.
+     * @param p the player whose {@link CivTechs} are applied
+     * @return The Flag Life-time, divided by the length of {@link #getTimerBlocks()}.
+     */
+    public static Duration getFlagPhasesDuration(Player p) {
+        if (CivTechs.isTechPresent(CivTechs.ATTRITION_DOCTRINE, p)) {
+            return (getFlagLifeTime(p)).dividedBy(getTimerBlocks().length);
+        }
         return getFlagLifeTime().dividedBy(getTimerBlocks().length);
     }
 

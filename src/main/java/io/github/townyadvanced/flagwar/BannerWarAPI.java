@@ -1,6 +1,8 @@
 package io.github.townyadvanced.flagwar;
 
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.object.Nation;
+import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
 import io.github.townyadvanced.flagwar.objects.Battle;
@@ -77,5 +79,56 @@ public final class BannerWarAPI {
      */
     public static boolean canFlag(Battle battle) {
         return (battle != null && battle.getCurrentStage() == BattleStage.FLAG);
+    }
+
+    /**
+     * Returns whether the {@link Resident} in question is part of that {@link Nation} or part of a {@link Nation} that is allied with it.
+     * @param n the {@link Nation}
+     * @param r the {@link Resident}
+     */
+    public static boolean hasAssociation(Resident r, Nation n) {
+        if (r == null) return false;
+        Town town = r.getTownOrNull();
+        if (town == null) return false;
+        Nation resNation = town.getNationOrNull();
+        if (resNation == null || n == null) return false;
+
+        return resNation.hasAlly(n) || resNation.equals(n);
+    }
+
+    /**
+     * Returns whether the {@link Resident} in question is part of the attacking {@link Nation} of this {@link Battle}, or part of a {@link Nation} that is allied with it.
+     * @param r the {@link Resident}
+     * @param battle the {@link Battle}
+     */
+    public static boolean isAssociatedWithAttacker(Resident r,  Battle battle) {
+        return hasAssociation(r, battle.getAttacker());
+    }
+
+    /**
+     * Returns whether the {@link Resident} in question is part of the defending {@link Nation} of this {@link Battle}, or part of a {@link Nation} that is allied with it.
+     * @param r the {@link Resident}
+     * @param battle the {@link Battle}
+     */
+    public static boolean isAssociatedWithDefender(Resident r,  Battle battle) {
+        return hasAssociation(r, battle.getDefender());
+    }
+
+    /**
+     * Returns whether the {@link Resident} in question is part of the defending {@link Nation} of this {@link Battle}, or part of a {@link Nation} that is allied with it.
+     * @param r the {@link Resident}'s name
+     * @param battle the {@link Battle}
+     */
+    public static boolean isAssociatedWithDefender(String r,  Battle battle) {
+        return isAssociatedWithDefender(TownyAPI.getInstance().getResident(r), battle);
+    }
+
+    /**
+     * Returns whether the {@link Resident} in question is part of the attacking {@link Nation} of this {@link Battle}, or part of a {@link Nation} that is allied with it.
+     * @param r the {@link Resident}'s name
+     * @param battle the {@link Battle}
+     */
+    public static boolean isAssociatedWithAttacker(String r,  Battle battle) {
+        return isAssociatedWithAttacker(TownyAPI.getInstance().getResident(r), battle);
     }
 }

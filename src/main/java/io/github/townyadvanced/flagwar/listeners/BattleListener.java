@@ -67,7 +67,7 @@ public class BattleListener implements Listener {
         int onlineResidents =
             town.getResidents().stream().filter(Resident::isOnline).toList().size();
 
-        if (attacker.hasAlly(defender) || attacker.equals(defender)) return;
+        if (BannerWarAPI.hasAssociation(r, defender)) return;
 
         Battle battle = BannerWarAPI.getBattle(townBlock);
 
@@ -245,7 +245,7 @@ public class BattleListener implements Listener {
         battle.removeFlag(c.getAttackData().getNameOfFlagOwner());
     }
 
-    @EventHandler
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = false)
     public void onAddFlagLife(PlayerInteractEvent e) {
 
         Block b = e.getClickedBlock();
@@ -262,7 +262,9 @@ public class BattleListener implements Listener {
                 if (cell != null) {
                     Resident placer = TownyAPI.getInstance().getResident(cell.getNameOfFlagOwner());
 
-                    if (adder.isAlliedWith(placer) && !adder.getNationRanks().isEmpty()) {
+                    if ((adder.isAlliedWith(placer) || adder.getTownOrNull().getNationOrNull().equals(placer.getTownOrNull().getNationOrNull()))
+                        && (adder.isKing() || !adder.getNationRanks().isEmpty())) {
+
                         ItemStack held = e.getPlayer().getInventory().getItemInMainHand();
 
                         if (held.getType() == Material.GOLD_INGOT) {

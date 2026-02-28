@@ -86,25 +86,20 @@ public class FlagWarBlockListener implements Listener {
 
             var player = townyBuildEvent.getPlayer();
             Nation defender = town.getNationOrNull();
-            Nation attacker = r.getTownOrNull().getNationOrNull();
 
             Battle battle = BannerWarAPI.getBattle(townBlock);
-
-            if (attacker.hasAlly(defender) || attacker.equals(defender)
+            if (BannerWarAPI.hasAssociation(r, defender)
                 && (battle == null || !battle.getCapturedTownBlocks().contains(townBlock))) return;
 
-            System.out.println("BATTLE " +  battle);
-
             if (battle == null) {
-                Broadcasts.sendMessage(player, ChatColor.RED +
-                    "You cannot flag a town that is not in a battle!");
+                Broadcasts.sendErrorMessage(player, "You cannot flag a town that is not in a battle!");
                 return;
             }
 
             if (!BannerWarAPI.canFlag(battle)) {
 
                 if (battle.getCurrentStage() != BattleStage.RUINED)
-                    Broadcasts.sendMessage(player, ChatColor.RED +
+                    Broadcasts.sendErrorMessage(player,
                         "You cannot flag in a battle that is not in its " + ChatColor.AQUA + "FLAG" + ChatColor.RED + " state!");
 
                 return;

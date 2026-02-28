@@ -149,7 +149,7 @@ warzone:
     # '*' = Allow all materials.
     # Prepend a '-' in front of a material to remove it. Used in conjunction with when you use '*'.
     # Eg: '*,-chest,-furnace'
-    editable_materials: tnt,oak_fence,birch_fence,spruce_fence,jungle_fence,dark_oak_fence,acacia_fence,ladder,oak_door,birch_door,spruce_door,jungle_door,dark_oak_door,acacia_fence,iron_door,fire
+    editable_materials: tnt,oak_fence,birch_fence,spruce_fence,jungle_fence,dark_oak_fence,acacia_fence,ladder,oak_door,birch_door,spruce_door,jungle_door,dark_oak_door,acacia_fence,iron_door,fire,ancient_debris
     item_use: true
     switch: true
 

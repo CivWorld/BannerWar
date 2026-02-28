@@ -16,6 +16,7 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
 import java.util.*;
@@ -151,7 +152,7 @@ public class Battle {
     }
 
     /** Returns the {@link Resident} who was mayor of the {@link #CONTESTED_TOWN} at the time of the attack. */
-    public Resident getInitialMayor() {
+    public @NotNull Resident getInitialMayor() {
         return INITIAL_MAYOR;
     }
 
@@ -401,10 +402,19 @@ public class Battle {
      * @param z the Z coordinate
      */
     public CellUnderAttack getCellUnderAttack(int x, int z) {
+
+        if (flags.isEmpty()) return null;
+
         for (var name : flags) {
-            CellUnderAttack cua = FlagWar.getCellsUnderAttackByPlayer(name).get(0); // there is only one flag per player.
-            if (cua.getX() ==  x && cua.getZ() == z)
-                return cua;
+
+            var cuas = FlagWar.getCellsUnderAttackByPlayer(name);
+
+            if (!cuas.isEmpty()) {
+                CellUnderAttack cua = cuas.get(0); // there is only one flag per player.
+
+                if (cua.getX() ==  x && cua.getZ() == z)
+                    return cua;
+            }
         }
 
         return null;

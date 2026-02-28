@@ -166,6 +166,7 @@ public class FlagWar extends JavaPlugin {
             getCommand("StageAdvance").setExecutor(new StageAdvance(this));
             getCommand("GetBattles").setExecutor(new todelete());
 
+            CivTechs.registerCivTechs();
         }
     }
 
@@ -211,7 +212,7 @@ public class FlagWar extends JavaPlugin {
     @SuppressFBWarnings("DLS_DEAD_LOCAL_STORE")
     @SuppressWarnings({"unused", "java:S1854", "java:S1481"})
     private void bStatsKickstart() {
-        //var metrics = new Metrics(this, METRICS_ID);
+        var metrics = new Metrics(this, METRICS_ID);
     }
 
     private void checkTowny() {
@@ -420,7 +421,7 @@ public class FlagWar extends JavaPlugin {
         ATTACK_HASH_MAP.remove(cell);
     }
 
-    static void attackWon(final CellUnderAttack cell) {
+    public static void attackWon(final CellUnderAttack cell) {
         var cellWonEvent = new CellWonEvent(cell);
         PLUGIN_MANAGER.callEvent(cellWonEvent);
         cell.cancel();
@@ -499,7 +500,7 @@ public class FlagWar extends JavaPlugin {
     public static void checkBlock(final Player player, final Block block, final Cancellable event) {
         if (FlagWarConfig.isAffectedMaterial(block.getType())) {
             var cell = Cell.parse(block.getLocation());
-            if (cell.isUnderAttack()) {
+            if (cell != null && cell.isUnderAttack()) {
                 CellUnderAttack cellAttackData = cell.getAttackData();
                 if (cellAttackData.isFlagTimer(block)) {
                     if (cellAttackData.decrementLife() == 0) {
@@ -603,8 +604,18 @@ public class FlagWar extends JavaPlugin {
             coordinates = String.format("%d, %d, %d", block.getX(), block.getY(), block.getZ());
         }
 
-        TownyMessaging.sendGlobalMessage(Translate.fromPrefixed("broadcast.area.under_attack",
-            landOwnerTown.getFormattedName(), coordinates, attackingResident.getFormattedName()));
+        long delay = 0;
+        if (CivTechs.isTechPresent(CivTechs.CAESAR_CIPHER, attackingResident)) delay = 200;
+
+        String finalCoordinates = coordinates;
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!getCellsUnderAttackByPlayer(player.getName()).isEmpty())
+                TownyMessaging.sendGlobalMessage(Translate.fromPrefixed("broadcast.area.under_attack",
+                    landOwnerTown.getFormattedName(), finalCoordinates, attackingResident.getFormattedName()));
+
+            },  delay);
+
         return true;
     }
 

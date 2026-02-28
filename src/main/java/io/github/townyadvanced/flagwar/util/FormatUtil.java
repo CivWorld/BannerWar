@@ -46,7 +46,7 @@ public final class FormatUtil {
      * Returns the noun with an "s" at the end if the count is not 1, and the count preceding it. <br> <br>
      * For example, the word "apples" and a count of 4 will return "4 apples".
      * Additionally, the word "banana" and a count of 1 will return "1 banana". <br> <br>
-     * This function does not work for irregular plurals. <br>
+     * This function does not consider irregular plurals. <br>
      * For example, the word "mouse" and a count of 3 will return "3 mouses" and not "3 mice".
      * @param word the singular noun
      * @param count the number of items
