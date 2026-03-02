@@ -16,10 +16,9 @@
 
 package io.github.townyadvanced.flagwar.config;
 
-import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.util.Colors;
 import com.palmergames.util.TimeTools;
-import io.github.townyadvanced.flagwar.CivTechs;
+import io.github.townyadvanced.flagwar.Civics;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.util.Messaging;
 import org.bukkit.Material;
@@ -362,7 +361,7 @@ public final class FlagWarConfig {
     public static Duration getFlagLifeTime(Player p) {
 
         Duration out = getFlagLifeTime();
-        if (CivTechs.isTechPresent(CivTechs.ATTRITION_DOCTRINE, p))
+        if (Civics.isTechPresent(Civics.ATTRITION_DOCTRINE, p))
             out = out.plusSeconds(10);
 
         return out;
@@ -392,11 +391,11 @@ public final class FlagWarConfig {
 
     /**
      * Get the {@link Duration} of each timer-material phase in a war flag's lifecycle.
-     * @param p the player whose {@link CivTechs} are applied
+     * @param p the player whose {@link Civics} are applied
      * @return The Flag Life-time, divided by the length of {@link #getTimerBlocks()}.
      */
     public static Duration getFlagPhasesDuration(Player p) {
-        if (CivTechs.isTechPresent(CivTechs.ATTRITION_DOCTRINE, p)) {
+        if (Civics.isTechPresent(Civics.ATTRITION_DOCTRINE, p)) {
             return (getFlagLifeTime(p)).dividedBy(getTimerBlocks().length);
         }
         return getFlagLifeTime().dividedBy(getTimerBlocks().length);

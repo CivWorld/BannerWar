@@ -18,6 +18,7 @@ public final class BannerWarAPI {
     public static boolean isInBattle(Town town) {
         return BattleManager.getBattle(town.getName()) != null;
     }
+
     /**
      * Returns whether the {@link Town} is already under a battle by the same or a different {@link Nation}, and is not in the {@link BattleStage#DORMANT} stage.
      * @param town the specified {@link Town}
@@ -65,35 +66,18 @@ public final class BannerWarAPI {
     }
 
     /**
-     * Returns whether the {@link Town}'s {@link Battle} is in its {@link io.github.townyadvanced.flagwar.objects.BattleStage#FLAG} state.
-     * @param town the specified {@link Town}
-     */
-    public static boolean canFlag(Town town) {
-        Battle battle = BattleManager.getBattle(town.getName());
-        return (battle != null && battle.getCurrentStage() == BattleStage.FLAG);
-    }
-
-    /**
-     * Returns whether the {@link Battle} is in its {@link BattleStage#FLAG} state.
-     * @param battle the specified {@link Battle}
-     */
-    public static boolean canFlag(Battle battle) {
-        return (battle != null && battle.getCurrentStage() == BattleStage.FLAG);
-    }
-
-    /**
      * Returns whether the {@link Resident} in question is part of that {@link Nation} or part of a {@link Nation} that is allied with it.
-     * @param n the {@link Nation}
-     * @param r the {@link Resident}
+     * @param nat the {@link Nation}
+     * @param res the {@link Resident}
      */
-    public static boolean hasAssociation(Resident r, Nation n) {
-        if (r == null) return false;
-        Town town = r.getTownOrNull();
-        if (town == null) return false;
-        Nation resNation = town.getNationOrNull();
-        if (resNation == null || n == null) return false;
+    public static boolean isAssociatedWithNation(Resident res, Nation nat) {
+        if (res == null) return false;
+        Town resTown = res.getTownOrNull();
+        if (resTown == null) return false;
+        Nation resNation = resTown.getNationOrNull();
+        if (resNation == null || nat == null) return false;
 
-        return resNation.hasAlly(n) || resNation.equals(n);
+        return nat.hasAlly(resNation) || resNation.equals(nat);
     }
 
     /**
@@ -102,7 +86,7 @@ public final class BannerWarAPI {
      * @param battle the {@link Battle}
      */
     public static boolean isAssociatedWithAttacker(Resident r,  Battle battle) {
-        return hasAssociation(r, battle.getAttacker());
+        return isAssociatedWithNation(r, battle.getAttacker());
     }
 
     /**
@@ -111,7 +95,7 @@ public final class BannerWarAPI {
      * @param battle the {@link Battle}
      */
     public static boolean isAssociatedWithDefender(Resident r,  Battle battle) {
-        return hasAssociation(r, battle.getDefender());
+        return isAssociatedWithNation(r, battle.getDefender());
     }
 
     /**
@@ -130,5 +114,14 @@ public final class BannerWarAPI {
      */
     public static boolean isAssociatedWithAttacker(String r,  Battle battle) {
         return isAssociatedWithAttacker(TownyAPI.getInstance().getResident(r), battle);
+    }
+
+    /**
+     * Returns whether the {@link Resident} in question is part of either of the two rival {@link Nation}s of this {@link Battle}, or part of a {@link Nation} that is allied with either or both.
+     * @param r the {@link Resident}
+     * @param battle the {@link Battle}
+     */
+    public static boolean isAssociatedWithBattle(Resident r,  Battle battle) {
+        return isAssociatedWithAttacker(r, battle) || isAssociatedWithDefender(r, battle);
     }
 }

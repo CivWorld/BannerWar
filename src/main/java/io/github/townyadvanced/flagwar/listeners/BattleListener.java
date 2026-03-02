@@ -31,11 +31,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class BattleListener implements Listener {
 
+    /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
 
     /** The error message for a minimum number of players. */
     private static final String PLAYERS_ONLINE_ERROR =
-        "There must be a minimum of %s online in %s for a battle to occur!";
+        "There must be a minimum of %s online in %s for a battle to occur!"; // TODO MAKE CONFIGURABLE
 
     public BattleListener(final JavaPlugin plugin) {
         this.PLUGIN = plugin;
@@ -67,7 +68,7 @@ public class BattleListener implements Listener {
         int onlineResidents =
             town.getResidents().stream().filter(Resident::isOnline).toList().size();
 
-        if (BannerWarAPI.hasAssociation(r, defender)) return;
+        if (BannerWarAPI.isAssociatedWithNation(r, defender)) return;
 
         Battle battle = BannerWarAPI.getBattle(townBlock);
 
@@ -151,9 +152,6 @@ public class BattleListener implements Listener {
 
         Broadcasts.broadcastMessage( attacker.getName() + " has initiated a battle on " + defender.getName() + " at " + contestedTown.getName() + "!");
         Broadcasts.broadcastMessage( "The battle will last " + FormatUtil.getFormattedTime(BattleUtil.getActivePeriod(battle)) + "!");
-        System.out.println("Battle started! preflag is " + battle.getDuration(BattleStage.PRE_FLAG));
-        System.out.println("flag is " + battle.getDuration(BattleStage.FLAG));
-        System.out.println("together is " + battle.getDuration(BattleStage.FLAG).plus(battle.getDuration(BattleStage.PRE_FLAG)));
     }
 
     @EventHandler
@@ -173,7 +171,6 @@ public class BattleListener implements Listener {
     @EventHandler
     public void onFlaggable(BattleFlaggableEvent event) {
         Battle battle = event.getBattle();
-        System.out.println("time to begin flag!");
         Broadcasts.broadcastMessage(
             "The battle at " + battle.getContestedTown().getName() + " has begun its " + ChatColor.AQUA + "FLAG" + ChatColor.RESET + " state. Flags may now be placed!");
     }
@@ -276,7 +273,7 @@ public class BattleListener implements Listener {
                                 return;
                             }
 
-                            held.setAmount(held.getAmount() - 1);
+                            held.setAmount(held.getAmount() - 1); // TODO: MAKE CONFIGURABLE
                             e.getPlayer().getInventory().setItemInMainHand(held);
                         }
                     }

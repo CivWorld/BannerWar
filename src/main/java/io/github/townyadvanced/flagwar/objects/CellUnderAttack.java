@@ -19,7 +19,7 @@ package io.github.townyadvanced.flagwar.objects;
 
 import com.palmergames.bukkit.towny.scheduling.ScheduledTask;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.CivTechs;
+import io.github.townyadvanced.flagwar.Civics;
 import io.github.townyadvanced.flagwar.util.HologramUtil;
 import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.scheduling.TaskScheduler;
@@ -42,85 +42,67 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Extension of a {@link Cell} when under attack.
- **/
+/** Extension of a {@link Cell} when under attack. */
 public class CellUnderAttack extends Cell {
 
-    /**
-     * Holds an instance of FlagWar's logger.
-     */
+    /** Holds an instance of FlagWar's logger. */
     private static final Logger LOGGER = FlagWar.getInstance().getLogger();
-    /**
-     * The TaskScheduler used to schedule attacks and holograms.
-     */
+
+    /** The TaskScheduler used to schedule attacks and holograms. */
     private final TaskScheduler scheduler = FlagWar.getFlagWar().getScheduler();
 
-    /**
-     * Holds the name of the war flag owner.
-     */
+    /** Holds the name of the war flag owner. */
     private final String nameOfFlagOwner;
-    /**
-     * Holds the {@link Block} used as the base of the war flag.
-     */
+
+    /** Holds the {@link Block} used as the base of the war flag. */
     private final Block flagBaseBlock;
-    /**
-     * Holds the {@link Block} representing middle of the traditional war flag.
-     */
+
+    /** Holds the {@link Block} representing middle of the traditional war flag. */
     private final Block flagTimerBlock;
-    /**
-     * Holds the {@link Block} representing the light-emitting top of a war flag.
-     */
+
+    /** Holds the {@link Block} representing the light-emitting top of a war flag. */
     private final Block flagLightBlock;
-    /**
-     * Holds the value between timer phases for both the war flag and the beacon.
-     */
+
+    /** Holds the value between timer phases for both the war flag and the beacon. */
     private final Duration flagPhaseDuration;
-    /**
-     * {@link List} of {@link Block}s used in the war beacon's body.
-     */
-    private List<Block> beaconFlagBlocks;
-    /**
-     * {@link List} of {@link Block}s used for the war beacon's wireframe.
-     */
-    private List<Block> beaconWireframeBlocks;
-    /**
-     * Identifies the phase the war flag is in.
-     **/
+
+    // /** {@link List} of {@link Block}s used in the war beacon's body. */
+    // private List<Block> beaconFlagBlocks;
+
+    // /** {@link List} of {@link Block}s used for the war beacon's wireframe. */
+    // private List<Block> beaconWireframeBlocks;
+
+    /** Identifies the phase the war flag is in.*/
     private int flagPhaseID;
-    /**
-     * Holds the time, in seconds, assuming 20 ticks is 1 second, that the war flag has left.
-     */
+
+    /** Holds the time, in seconds, assuming 20 ticks is 1 second, that the war flag has left. */
     private Duration flagTimeLeft;
-    /**
-     * Holds the initial number of lives the {@link CellUnderAttack} has, excluding any external flag life increases.
-     */
+
+    /** Holds the number of lives the {@link CellUnderAttack} has. */
     private int lives = 1;
-    /**
-     * Holds the number of lives that have been added to the {@link CellUnderAttack} since its construction.
-     */
+
+    /** Holds the number of lives that have been added to the {@link CellUnderAttack} since its construction. */
     private int lifeAdditions = 0;
-    /**
-     * Holds the repeating {@link BukkitTask} that updates the hologram.
-     */
+
+    /** Holds the repeating {@link BukkitTask} that updates the hologram. */
     private ScheduledTask hologramUpdateTask;
-    /**
-     * Holds the {@link BukkitTask} that handles flag color cycling.
-     */
-    private ScheduledTask mainUpdateTask;
-    /**
-     * Holds the number of lives left required to initiate the {@link CivTechs#INFERNAL_WARFLAGS} CivTech, assuming the {@link #nameOfFlagOwner} has it.
-     */
-    private static final int LIVES_TO_INFERNALIZE = 3;
 
+    /** Holds the repeating {@link BukkitTask} that updates the time left. */
+    private ScheduledTask updateTimeTask;
 
+    /** Holds the {@link BukkitTask} that handles flag updates. */
+    private ScheduledTask flagUpdateTask;
+
+    /** Holds the number of lives left required to initiate the {@link Civics#INFERNAL_WARFLAGS} CivTech, assuming the {@link #nameOfFlagOwner} has it. */
+    private static final int LIVES_TO_INFERNAL = 3;
 
     /**
      * Prepares the CellUnderAttack.
      *
      * @param flagOwner  Name of the Resident that placed the flag
      * @param base       {@link Block} representing the "flag pole" of the block
-     * @param timerPhase Time (as a long) between Material shifting the flag and beacon.
+     * @param timerPhase Time (as a long) between Material shifting the flag and beacon
+     * @param battle     The {@link Battle} that this cell is a part of
      */
     public CellUnderAttack(final String flagOwner, final Block base, final Duration timerPhase, Battle battle) {
 
@@ -128,10 +110,10 @@ public class CellUnderAttack extends Cell {
         this.flagTimeLeft = FlagWarConfig.getFlagLifeTime();
         this.flagPhaseDuration = timerPhase;
 
-        if (CivTechs.isTechPresent(CivTechs.ATTRITION_DOCTRINE, battle.getInitialMayor())
+        if (Civics.isTechPresent(Civics.ATTRITION_DOCTRINE, battle.getInitialMayor())
             && BannerWarAPI.isAssociatedWithAttacker(flagOwner, battle))
         {
-            flagTimeLeft = flagTimeLeft.plusSeconds(10);
+            flagTimeLeft = flagTimeLeft.plusSeconds(10); // TODO: make configurable
         }
 
         this.nameOfFlagOwner = flagOwner;
@@ -168,8 +150,8 @@ public class CellUnderAttack extends Cell {
             return;
         }
 
-        beaconFlagBlocks = new ArrayList<>();
-        beaconWireframeBlocks = new ArrayList<>();
+        // beaconFlagBlocks = new ArrayList<>();
+        // beaconWireframeBlocks = new ArrayList<>();
 
         int beaconSize = FlagWarConfig.getBeaconSize();
         if (Coord.getCellSize() < beaconSize) {
@@ -204,9 +186,9 @@ public class CellUnderAttack extends Cell {
     private void drawBeaconOrWireframe(final int edge, final int y, final int z, final int x, final Block block) {
         int edgeCount = getEdgeCount(x, y, z, edge);
         if (edgeCount > 1) {
-            beaconWireframeBlocks.add(block);
+            // beaconWireframeBlocks.add(block);
         } else if (edgeCount == 1) {
-            beaconFlagBlocks.add(block);
+            // beaconFlagBlocks.add(block);
         }
     }
 
@@ -265,8 +247,7 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
-     * @return TRUE if the {@link #flagPhaseID} is equal or greater than the length of
-     * {@link FlagWarConfig#getTimerBlocks()}
+     * @return True if the {@link #flagTimeLeft} is negative or zero.
      */
     public boolean hasEnded() {
         return (flagTimeLeft.isNegative() || flagTimeLeft.isZero());
@@ -283,33 +264,34 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
-     * Function to draw the war flag, and beacon wire frame (if {@link #beaconWireframeBlocks} is not empty.)
+     * Function to draw the war flag.
      * First, runs {@link #loadBeacon()}. Then, sets the {@link #flagBaseBlock} to the type defined by
      * {@link FlagWarConfig#getFlagBaseMaterial()}. Runs {@link #updateFlag()}, then proceeds to draw the
-     * {@link #flagLightBlock}. Finally, for each {@link Block} in {@link #beaconWireframeBlocks}, draws it.
+     * {@link #flagLightBlock}.
      */
     public void drawFlag() {
         loadBeacon();
         flagBaseBlock.setType(FlagWarConfig.getFlagBaseMaterial());
         updateFlag();
         flagLightBlock.setType(FlagWarConfig.getFlagLightMaterial());
-        for (Block block : beaconWireframeBlocks) {
+        /* for (Block block : beaconWireframeBlocks) {
             block.setType(FlagWarConfig.getBeaconWireFrameMaterial());
-        }
+         } */
     }
 
     /**
-     * If {@link #hasEnded()} returns False and {@link #isInfernalized()} also returns False, update the {@link #flagTimerBlock} from the timerBlock array, using the
-     * {@link #flagPhaseID} for the array ID. Iterate through and update the {@link #beaconFlagBlocks}.
+     * If {@link #hasEnded()} returns False and {@link #isInfernal()} also returns False, update the {@link #flagTimerBlock} from the timerBlock array, using the
+     * {@link #flagPhaseID} for the array ID.
      * Finally, log the update on the INFO channel.
      */
     public void updateFlag() {
         Material[] timer = FlagWarConfig.getTimerBlocks();
-        if (!hasEnded() && !isInfernalized()) {
+
+        if (!hasEnded() && !isInfernal()) {
+
             flagTimerBlock.setType(timer[flagPhaseID]);
-            for (Block block : beaconFlagBlocks) {
-                block.setType(timer[flagPhaseID]);
-            }
+            // for (Block block : beaconFlagBlocks) block.setType(timer[flagPhaseID]);
+
             LOGGER.log(Level.INFO, () ->
                 Translate.from("log.warflag-updated", getCellString(), timer[flagPhaseID].toString()));
         }
@@ -322,12 +304,12 @@ public class CellUnderAttack extends Cell {
         flagLightBlock.setType(Material.AIR);
         flagTimerBlock.setType(Material.AIR);
         flagBaseBlock.setType(Material.AIR);
-        for (Block block : beaconFlagBlocks) {
+        /* for (Block block : beaconFlagBlocks) {
             block.setType(Material.AIR);
         }
         for (Block block : beaconWireframeBlocks) {
             block.setType(Material.AIR);
-        }
+        } */
     }
 
     /**
@@ -338,9 +320,9 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
-     * Draw the initial phase of the flag and jump-start both the {@link #mainUpdateTask} and {@link #hologramUpdateTask}.
+     * Draw the initial phase of the flag and jump-start both the {@link #flagUpdateTask} and {@link #hologramUpdateTask}.
      * <p>
-     * Uses the {@link #flagPhaseDuration} as both the repeat delay and runtime period for the {@link #mainUpdateTask}.
+     * Uses the {@link #flagPhaseDuration} as both the repeat delay and runtime period for the {@link #flagUpdateTask}.
      * The delay and period are derived from the phase duration in milliseconds, divided by 50.
      * This value is floored to the last tick, and is not rounded.
      * </p>
@@ -354,31 +336,36 @@ public class CellUnderAttack extends Cell {
         drawFlag();
         final int milliTicks = 50;
         final long ticksFromMs = this.flagPhaseDuration.toMillis() / milliTicks;
-        mainUpdateTask = scheduler.runLater(this::recurseMainUpdateTask, ticksFromMs);
+        flagUpdateTask = scheduler.runLater(this::updateCell, ticksFromMs);
+
+        updateTimeTask =
+            scheduler.runRepeating(() -> flagTimeLeft = flagTimeLeft.minusMillis(50), 1, 1);
 
         if (FlagWarConfig.isHologramEnabled()) {
             HologramUtil.drawHologram(getCellHologramKey(), flagLightBlock.getLocation(), flagTimeLeft);
 
             if (FlagWarConfig.hasTimerLine()) {
-                hologramUpdateTask = scheduler.runRepeating(() -> {
-                    flagTimeLeft = flagTimeLeft.minusMillis(100);
-                    this.taskUpdateHologram();
-                }, 2, 2);
+                hologramUpdateTask = scheduler.runRepeating(this::taskUpdateHologram, 5, 5);
             }
         }
     }
 
     /**
-     * Cancels the {@link #mainUpdateTask}, started in {@link #beginAttack()}. Then runs {@link #destroyFlag()}.
+     * Cancels the {@link #flagUpdateTask}, started in {@link #beginAttack()}. Then runs {@link #destroyFlag()}.
      * Also cancels the {@link #hologramUpdateTask}, if running, and destroys the Hologram, if it
      * exists, using {@link HologramUtil#destroyHologram(String)}.
      */
     public void cancel() {
-        if (mainUpdateTask != null) {
-            mainUpdateTask.cancel();
+        if (flagUpdateTask != null) {
+            flagUpdateTask.cancel();
         }
+
         if (FlagWarConfig.isHologramEnabled() && hologramUpdateTask != null) {
             hologramUpdateTask.cancel();
+        }
+
+        if (updateTimeTask != null) {
+            updateTimeTask.cancel();
         }
 
         destroyFlag();
@@ -462,11 +449,14 @@ public class CellUnderAttack extends Cell {
 
     /**
      * @param block Supplied {@link Block}.
-     * @return TRUE if the supplied Block is contained in either the {@link #beaconFlagBlocks} or
-     * {@link #beaconWireframeBlocks} lists.
+     * @return TRUE if the supplied Block is contained in either the beaconFlagBlocks or
+     * beaconWireframeBlocks lists.
+     * <p>
+     * Note: permanently returns {@code false} due to beacon deprecation in place of the PlayerLocatorAPI in BannerWar.
      */
     public boolean isPartOfBeacon(final Block block) {
-        return beaconFlagBlocks != null && beaconFlagBlocks.contains(block) || beaconWireframeBlocks.contains(block);
+        // return beaconFlagBlocks != null && beaconFlagBlocks.contains(block) || beaconWireframeBlocks.contains(block);
+        return false;
     }
 
     /**
@@ -485,14 +475,15 @@ public class CellUnderAttack extends Cell {
      * @return whether a life has been added
      */
     public boolean tryAddLife() {
-        if (lifeAdditions == 3) return false;
+        if (lifeAdditions == 3) return false; // TODO MAKE CONFIGURABLE
 
-        flagTimeLeft = flagTimeLeft.plusSeconds(5);
+        flagTimeLeft = flagTimeLeft.plusSeconds(5); // TODO MAKE CONFIGURABLE
 
         lives++;
         lifeAdditions++;
 
-        if (isInfernalized()) infernalizeFlag();
+        if (isInfernal()) makeInfernal();
+        updateFlag();
 
         return true;
     }
@@ -510,33 +501,46 @@ public class CellUnderAttack extends Cell {
      */
     public int decrementLife() {
         lives--;
+        if (isInfernal()) makeInfernal();
         updateFlag();
         return lives;
     }
 
-    private void recurseMainUpdateTask() {
-
-        taskUpdateHologram();
+    /**
+     * Updates the {@link CellUnderAttack}, including the flag itself. <br> <br>
+     * Calls {@link #changeFlag()}, checks if the battle is won and recurses the {@link #flagUpdateTask}
+     * to run after the next calculated flag phase duration.
+     */
+    private void updateCell() {
 
         this.changeFlag();
 
         if (this.hasEnded()) FlagWar.attackWon(this);
 
         else {
-            int remainingBlocks = FlagWarConfig.getTimerBlocks().length - (flagPhaseID);
-            Duration phaseDuration = flagTimeLeft.dividedBy(remainingBlocks);
-            long ticks = phaseDuration.toMillis() / 50; // 50 milliseconds per tick.
 
-            mainUpdateTask = scheduler.runLater(this::recurseMainUpdateTask, ticks);
+            int millisPerTick = 50;
+            int remainingBlocks = FlagWarConfig.getTimerBlocks().length - flagPhaseID;
+            Duration phaseDuration = flagTimeLeft.dividedBy(remainingBlocks);
+            long ticks = phaseDuration.toMillis() / millisPerTick;
+
+            flagUpdateTask = scheduler.runLater(this::updateCell, ticks);
         }
     }
 
-    private void infernalizeFlag() {
-        flagTimeLeft = flagTimeLeft.plusSeconds(20);
+    /**
+     * Applies the {@link Civics#INFERNAL_WARFLAGS} effect on a flag, where 20 seconds is added to its lifetime
+     * and its timer block is replaced by ancient debris by default.
+     */
+    private void makeInfernal() {
+        flagTimeLeft = flagTimeLeft.plusSeconds(20); // TODO MAKE CONFGIURABLE
         flagTimerBlock.setType(Material.ANCIENT_DEBRIS); // TODO: MAKE CONFIGURABLE
     }
 
-    private boolean isInfernalized() {
-        return lives == LIVES_TO_INFERNALIZE && CivTechs.isTechPresent(CivTechs.INFERNAL_WARFLAGS, nameOfFlagOwner);
+    /**
+     * Returns whether this {@link CellUnderAttack} should have the {@link Civics#INFERNAL_WARFLAGS} effect applied to it.
+     */
+    private boolean isInfernal() {
+        return lives == LIVES_TO_INFERNAL && Civics.isTechPresent(Civics.INFERNAL_WARFLAGS, nameOfFlagOwner);
     }
 }

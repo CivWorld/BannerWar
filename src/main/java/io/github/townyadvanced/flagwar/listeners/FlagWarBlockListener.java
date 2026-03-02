@@ -88,7 +88,7 @@ public class FlagWarBlockListener implements Listener {
             Nation defender = town.getNationOrNull();
 
             Battle battle = BannerWarAPI.getBattle(townBlock);
-            if (BannerWarAPI.hasAssociation(r, defender)
+            if (BannerWarAPI.isAssociatedWithNation(r, defender)
                 && (battle == null || !battle.getCapturedTownBlocks().contains(townBlock))) return;
 
             if (battle == null) {
@@ -96,7 +96,7 @@ public class FlagWarBlockListener implements Listener {
                 return;
             }
 
-            if (!BannerWarAPI.canFlag(battle)) {
+            if (!battle.isFlagging()) {
 
                 if (battle.getCurrentStage() != BattleStage.RUINED)
                     Broadcasts.sendErrorMessage(player,

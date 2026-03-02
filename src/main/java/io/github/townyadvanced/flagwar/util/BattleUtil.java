@@ -3,6 +3,7 @@ package io.github.townyadvanced.flagwar.util;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.WorldCoord;
+import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
 import org.bukkit.Bukkit;
@@ -71,9 +72,13 @@ public final class BattleUtil {
 
         int size = b.getInitialTownBlocks().size();
 
-        stageTimes.put(BattleStage.PRE_FLAG, !b.isCityState() ? Duration.ofMinutes(Math.round(0.5*size)) : Duration.ofSeconds(30));
+        stageTimes.put(BattleStage.PRE_FLAG, !b.isCityState() ? Duration.ofMinutes(Math.round(0.5*size))
+            : Duration.ofSeconds(30));
+
         stageTimes.put(BattleStage.FLAG, Duration.ofMinutes(Math.round(1.7*size)));
+
         stageTimes.put(BattleStage.RUINED, Duration.ofMinutes(Math.round(1.5*size)));
+
         stageTimes.put(BattleStage.DORMANT, Duration.ofDays((long) Math.ceil(size/30.0) + 1));
 
         return stageTimes;
@@ -89,7 +94,7 @@ public final class BattleUtil {
 
 
     /**
-     * Returns a {@link Collection} of the {@link ChunkSnapshot} counterparts to the provided {@link Chunk}s
+     * Returns a {@link Collection} of {@link ChunkSnapshot}s of the provided {@link Chunk}s
      * @param chunks the {@link Collection} of {@link Chunk}s
      */
     public static Collection<ChunkSnapshot> toChunkSnapshot(Collection<Chunk> chunks) {
@@ -111,4 +116,13 @@ public final class BattleUtil {
         return out;
     }
 
+    /**
+     * Returns the number of towny days that have passed since the specified day.
+     * <p>
+     * Calls {@link BannerWarConfig#getCurrentTownyDay()} and returns the difference between that and the specified day.
+     * @param day the specified day
+     */
+    public static long daysSince(long day) {
+        return BannerWarConfig.getCurrentTownyDay() - day;
+    }
 }

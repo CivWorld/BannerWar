@@ -2,21 +2,25 @@ package io.github.townyadvanced.flagwar;
 
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
-import io.github.townyadvanced.flagwar.database.DatabaseRetrieval;
+import io.github.townyadvanced.flagwar.database.DatabaseInteraction;
 import io.github.townyadvanced.flagwar.events.BattleStartEvent;
+import io.github.townyadvanced.flagwar.objects.BannerPlacerRecord;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleRecord;
+import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public final class BattleManager {
 
-    /** Holds the {@link DatabaseRetrieval} instance. */
-    private final DatabaseRetrieval DATABASE_RETRIEVAL;
+    /** Holds the {@link DatabaseInteraction} instance. */
+    private final DatabaseInteraction DATABASE_INTERACTION;
 
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
@@ -24,8 +28,8 @@ public final class BattleManager {
     /** Holds a {@link HashMap} of every {@link Battle} and its associated contested town's name. */
     private static final Map<String, Battle> ACTIVE_BATTLES = new HashMap<>();
 
-    public BattleManager(JavaPlugin plugin, DatabaseRetrieval databaseRetrieval) {
-        DATABASE_RETRIEVAL = databaseRetrieval;
+    public BattleManager(JavaPlugin plugin, DatabaseInteraction databaseInteraction) {
+        DATABASE_INTERACTION = databaseInteraction;
         PLUGIN = plugin;
         resumeBattles();
     }
@@ -36,7 +40,7 @@ public final class BattleManager {
     private void resumeBattles() {
         ACTIVE_BATTLES.clear();
 
-        DATABASE_RETRIEVAL.getBattles().thenAccept(battleRecords -> {
+        DATABASE_INTERACTION.getBattles().thenAccept(battleRecords -> {
             for (BattleRecord r : battleRecords) {
                 ACTIVE_BATTLES.put(r.contestedTown(), new Battle(r));
                 PLUGIN.getLogger().info("Battle " + r.contestedTown() + " has been resumed");
@@ -62,7 +66,7 @@ public final class BattleManager {
 
             battle.updateBossBar();
 
-            DATABASE_RETRIEVAL.insertOrUpdate(BattleRecord.of(battle));
+            DATABASE_INTERACTION.insertOrUpdate(BattleRecord.of(battle));
         }
     }
 
@@ -119,5 +123,24 @@ public final class BattleManager {
     public static void deleteBossBars() {
         for (var battle : ACTIVE_BATTLES.values()) battle.deleteBossBar();
 
+    }
+
+    public void logBannerPlacer(BannerPlacerRecord bannerPlacerRecord) {
+        DATABASE_INTERACTION.insertOrUpdate(bannerPlacerRecord);
+    }
+
+    /**
+     * Returns every {@link Town} whose last banner placement happened a number of days ago that is greater than or equal to the specified number of days.
+     * @param days the specified number of days
+     */
+    public CompletableFuture<Collection<Town>> getAllExpiredBannerPlacers(long days) {
+        return DATABASE_INTERACTION.getBannerPlacers().thenApply(bannerPlacerRecords -> {
+
+            Collection<Town> out = new ArrayList<>();
+            bannerPlacerRecords.forEach(bp -> {
+                if (BattleUtil.daysSince(bp.dayOfAttack()) >= days) out.add(bp.town());
+            });
+            return out;
+        });
     }
 }

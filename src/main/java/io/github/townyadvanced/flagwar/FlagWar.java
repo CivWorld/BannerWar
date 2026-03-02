@@ -41,7 +41,7 @@ import io.github.townyadvanced.flagwar.command.todelete;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.database.DatabaseManager;
-import io.github.townyadvanced.flagwar.database.DatabaseRetrieval;
+import io.github.townyadvanced.flagwar.database.DatabaseInteraction;
 import io.github.townyadvanced.flagwar.events.CellAttackCanceledEvent;
 import io.github.townyadvanced.flagwar.events.CellAttackEvent;
 import io.github.townyadvanced.flagwar.events.CellDefendedEvent;
@@ -56,7 +56,6 @@ import java.io.IOException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.security.spec.RSAOtherPrimeInfo;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -128,10 +127,12 @@ public class FlagWar extends JavaPlugin {
     private OutlawListener outlawListener;
     /** Holds instance of the {@link BattleListener}. */
     private BattleListener battleListener;
+    /** Holds instance of the {@link WearinessListener}. */
+    private WearinessListener wearinessListener;
     /** Holds instance of the {@link DatabaseManager}. */
     private DatabaseManager databaseManager;
-    /** Holds instance of the {@link DatabaseRetrieval}. */
-    private DatabaseRetrieval databaseRetrieval;
+    /** Holds instance of the {@link DatabaseInteraction}. */
+    private DatabaseInteraction databaseInteraction;
     /** Holds instance of the {@link BattleClock}. */
     private BattleClock battleClock;
     /** Holds instance of the {@link BattleManager}. */
@@ -151,6 +152,7 @@ public class FlagWar extends JavaPlugin {
 
         setInstance();
         initializeInstances();
+        Civics.init();
 
         if (loadConfig()) {
             setLocale();
@@ -166,7 +168,6 @@ public class FlagWar extends JavaPlugin {
             getCommand("StageAdvance").setExecutor(new StageAdvance(this));
             getCommand("GetBattles").setExecutor(new todelete());
 
-            CivTechs.registerCivTechs();
         }
     }
 
@@ -195,6 +196,7 @@ public class FlagWar extends JavaPlugin {
 
         battleClock.kill();
         BattleManager.deleteBossBars();
+        Civics.unRegisterCivTechs();
 
         if (!ATTACK_HASH_MAP.isEmpty()) {
             for (CellUnderAttack cell : new ArrayList<>(ATTACK_HASH_MAP.values())) {
@@ -258,8 +260,8 @@ public class FlagWar extends JavaPlugin {
     /** Initialize Instances. */
     public void initializeInstances() {
         databaseManager = new DatabaseManager(this);
-        databaseRetrieval = new DatabaseRetrieval(getLogger(), databaseManager);
-        battleManager = new BattleManager(this, databaseRetrieval);
+        databaseInteraction = new DatabaseInteraction(getLogger(), databaseManager);
+        battleManager = new BattleManager(this, databaseInteraction);
         battleClock = new BattleClock(this, battleManager);
     }
 
@@ -272,6 +274,7 @@ public class FlagWar extends JavaPlugin {
         warzoneListener = new WarzoneListener();
         outlawListener = new OutlawListener();
         battleListener = new BattleListener(this);
+        wearinessListener = new WearinessListener(battleManager, this);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialized"));
     }
 
@@ -605,7 +608,7 @@ public class FlagWar extends JavaPlugin {
         }
 
         long delay = 0;
-        if (CivTechs.isTechPresent(CivTechs.CAESAR_CIPHER, attackingResident)) delay = 200;
+        if (Civics.isTechPresent(Civics.CAESAR_CIPHER, attackingResident)) delay = 200;
 
         String finalCoordinates = coordinates;
 

@@ -4,12 +4,14 @@ import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.utils.TownRuinUtil;
+import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.BattleManager;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.chunk.ChunkCopy;
 import io.github.townyadvanced.flagwar.chunk.ChunkPaste;
 import io.github.townyadvanced.flagwar.events.BattleEndEvent;
 import io.github.townyadvanced.flagwar.events.BattleFlaggableEvent;
+import io.github.townyadvanced.flagwar.events.BattleRuinEvent;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -291,6 +293,7 @@ public class Battle {
         setStage(BattleStage.RUINED);
         if (getContestedTown() != null)
             TownRuinUtil.putTownIntoRuinedState(getContestedTown());
+        Bukkit.getPluginManager().callEvent(new BattleRuinEvent(this));
     }
 
     /** Puts the {@link #CONTESTED_TOWN} out of its ruined state and turns it {@link BattleStage#DORMANT}. */
@@ -300,7 +303,8 @@ public class Battle {
             TownRuinUtil.reclaimTown(getInitialMayor(), getContestedTown());
     }
 
-    /** Procedures to be performed at the end of a war, regardless of the result, such as transferring ownership of {@link TownBlock}s back and cancelling ongoing flags. */
+    /** Procedures to be performed at the end of a war, regardless of the result,
+     * such as transferring ownership of {@link TownBlock}s back and cancelling ongoing flags. */
     private void endWarProcedures() {
 
         for (String n : flags) FlagWar.removeAttackerFlags(n);
@@ -365,7 +369,7 @@ public class Battle {
 
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {
             Resident r = TownyAPI.getInstance().getResident(p);
-            if (isParticipant(r)) bossBar.addPlayer(p);
+            if (BannerWarAPI.isAssociatedWithBattle(r, this)) bossBar.addPlayer(p);
             else bossBar.removePlayer(p);
         }
     }
@@ -379,22 +383,6 @@ public class Battle {
         bossBar = null;
     }
 
-    /**
-     * Returns whether a {@link Resident} is part of either the attacking {@link Nation}, defending {@link Nation} or one of their allies.
-     * @param r the {@link Resident} in question.
-     */
-    public boolean isParticipant(Resident r) {
-        Set<Nation> relevantNations = new HashSet<>();
-
-        if (r == null || r.getTownOrNull() == null || r.getNationOrNull() == null) return false;
-
-        relevantNations.add(getDefender());
-        relevantNations.add(getAttacker());
-        if (getDefender() != null) relevantNations.addAll(getDefender().getAllies());
-        if (getAttacker() != null) relevantNations.addAll(getAttacker().getAllies());
-
-        return relevantNations.contains(r.getTownOrNull().getNationOrNull()) || getContestedTown().getResidents().contains(r);
-    }
 
     /**
      * Returns the {@link CellUnderAttack} with the specified X and Z chunk coordinates.
@@ -412,7 +400,7 @@ public class Battle {
             if (!cuas.isEmpty()) {
                 CellUnderAttack cua = cuas.get(0); // there is only one flag per player.
 
-                if (cua.getX() ==  x && cua.getZ() == z)
+                if (cua.getX() == x && cua.getZ() == z)
                     return cua;
             }
         }
@@ -421,9 +409,14 @@ public class Battle {
     }
 
     /**
-     * Gets every flag's flag owner associated with this {@link Battle}.
+     * Gets every flag's flag owner associated with this {@link Battle},
+     * where the {@link CellUnderAttack} can be looked up using {@link FlagWar#getCellsUnderAttackByPlayer(String)}.
      */
     public Collection<String> getCellsUnderAttack() {
         return flags;
+    }
+
+    public boolean isFlagging() {
+        return getCurrentStage() == BattleStage.FLAG;
     }
 }
