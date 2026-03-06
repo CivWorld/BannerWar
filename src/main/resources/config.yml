@@ -236,6 +236,12 @@ civics:
             # How long the flag's lifetime is extended at the start of every flag place by the presence of this CivTech.
             lifetime_increase: 10
 
+        # Define configurations of the "War Economy" CivTech.
+        war_economy:
+
+            # The percentage decrease applied to all increases in weariness if the CivTech exists.
+            percentage_weariness_decrease: 15
+
     # Define various percentage increases, decreases and thresholds of war weariness
     # associated with battle-related actions.
     war_weariness:

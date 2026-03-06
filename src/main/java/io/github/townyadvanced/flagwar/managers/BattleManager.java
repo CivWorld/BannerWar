@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +32,10 @@ public final class BattleManager {
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
 
+    /** Holds the {@link BukkitScheduler} instance. */
+    private final BukkitScheduler SCHEDULER;
+
+
     /** Holds the {@link WaypointManager} instance. */
     private final WaypointManager WAYPOINT_MANAGER;
 
@@ -40,6 +45,7 @@ public final class BattleManager {
     public BattleManager(JavaPlugin plugin, DatabaseInteraction databaseInteraction, WaypointManager waypointManager) {
         DATABASE_INTERACTION = databaseInteraction;
         PLUGIN = plugin;
+        SCHEDULER = Bukkit.getScheduler();
         WAYPOINT_MANAGER = waypointManager;
         resumeBattles();
     }
@@ -77,18 +83,27 @@ public final class BattleManager {
             if (battle.isPendingStageAdvance()) battle.advanceStage(true);
             battle.updateBossBar();
 
-            var associated = BannerWarAPI.getAssociatedPlayers(battle);
-            var notAssociated = BannerWarAPI.getNonAssociatedPlayers(battle);
+            BannerWarAPI.getAllBots().thenAccept(bots -> {
 
-            for (String flagOwner : battle.getCellsUnderAttack()) {
-                WAYPOINT_MANAGER.addPlayersToWaypoint(
-                    associated, flagOwner
-                );
+                var associated = BannerWarAPI.getAssociatedPlayers(battle);
+                var notAssociated = BannerWarAPI.getNonAssociatedPlayers(battle);
 
-                WAYPOINT_MANAGER.removePlayersFromWaypoint(
-                    notAssociated, flagOwner
-                );
-            }
+                associated.removeAll(bots);
+                notAssociated.removeAll(bots);
+
+                CompletableFuture.runAsync(() -> {
+
+                    for (String flagOwner : battle.getCellsUnderAttack()) {
+                        WAYPOINT_MANAGER.addPlayersToWaypoint(
+                            associated, flagOwner
+                        );
+
+                        WAYPOINT_MANAGER.removePlayersFromWaypoint(
+                            notAssociated, flagOwner
+                        );
+                    }
+                }, runnable -> SCHEDULER.runTask(PLUGIN, runnable));
+            });
 
             DATABASE_INTERACTION.insertOrUpdate(BattleRecord.of(battle));
         }
@@ -150,6 +165,10 @@ public final class BattleManager {
 
     }
 
+    /**
+     * Updates the database to store a record of this banner placement to be retrieved later.
+     * @param bannerPlacerRecord the {@link BannerPlacerRecord}
+     */
     public void logBannerPlacer(BannerPlacerRecord bannerPlacerRecord) {
         DATABASE_INTERACTION.insertOrUpdate(bannerPlacerRecord);
     }
@@ -168,7 +187,6 @@ public final class BattleManager {
             return out;
         });
     }
-
 
     /**
      * Registers to the relevant {@link Battle} that a {@link CellUnderAttack} was won by the attacker.

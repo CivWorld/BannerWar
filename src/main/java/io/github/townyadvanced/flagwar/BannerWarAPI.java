@@ -8,11 +8,17 @@ import com.palmergames.bukkit.towny.object.TownBlock;
 import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
+import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import town.sheepy.townyAI.TownyAI;
+import town.sheepy.townyAI.api.TownyAIAPI;
+import town.sheepy.townyAI.api.TownyAIAPIImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 
 public final class BannerWarAPI {
     private BannerWarAPI() {}
@@ -131,16 +137,13 @@ public final class BannerWarAPI {
         return isAssociatedWithAttacker(r, battle) || isAssociatedWithDefender(r, battle);
     }
 
-
     /**
      * Returns a {@link Collection} of every associated player to a {@link Battle}
      * by adding them if {@link #isAssociatedWithBattle(Resident, Battle)} returns true for them.
      * <p>
-     * This list excludes townyAI bots.
      * @param battle the battle
      */
     public static Collection<Player> getAssociatedPlayers(Battle battle) {
-
         Collection<Player> out = new ArrayList<>();
 
         for (var p : Bukkit.getOnlinePlayers()) {
@@ -155,7 +158,6 @@ public final class BannerWarAPI {
      * Returns a {@link Collection} of every player that is NOT associated to a {@link Battle}
      * by adding them if they are part of {@link Bukkit#getOnlinePlayers()} and not part of {@link #getAssociatedPlayers(Battle)}.
      * <p>
-     * This list excludes townyAI bots.
      * @param battle the battle
      */
     public static Collection<Player> getNonAssociatedPlayers(Battle battle) {
@@ -164,5 +166,70 @@ public final class BannerWarAPI {
         out.removeAll(getAssociatedPlayers(battle));
 
         return out;
+    }
+
+    /**
+     * Returns a {@link Collection} of every associated player to a {@link Battle}
+     * by adding them if {@link #isAssociatedWithBattle(Resident, Battle)} returns true for them.
+     * <p>
+     * This collection excludes townyAI bots.
+     * @param battle the battle
+     */
+    public static CompletableFuture<Collection<Player>> getAssociatedNonBots(Battle battle) {
+
+        Collection<Player> out = getAssociatedPlayers(battle);
+
+        return CompletableFuture.supplyAsync(() -> {
+            getAllBots().thenAccept(out::removeAll);
+            return out;
+        });
+    }
+
+    /**
+     * Returns a {@link Collection} of every player that is NOT associated to a {@link Battle}
+     * by adding them if they are part of {@link Bukkit#getOnlinePlayers()} and not part of {@link #getAssociatedPlayers(Battle)}.
+     * <p>
+     * This collection excludes townyAI bots.
+     * @param battle the battle
+     */
+    public static CompletableFuture<Collection<Player>> getNonAssociatedNonBots(Battle battle) {
+
+        Collection<Player> out = getNonAssociatedPlayers(battle);
+
+        return CompletableFuture.supplyAsync(() -> {
+            getAllBots().thenAccept(out::removeAll);
+            return out;
+        });
+    }
+
+    /**
+     * Returns a {@link Collection} of every player that is a TownyAI bot.
+     */
+    public static CompletableFuture<Collection<Player>> getAllBots() {
+
+        if (Bukkit.getServer().getPluginManager().getPlugin("TownyAI") == null) {
+            JavaPlugin.getProvidingPlugin(FlagWar.class).getLogger().warning("Plugin 'TownyAI' does not exist! Returning empty collection!");
+            return CompletableFuture.completedFuture(new ArrayList<>());
+        }
+
+            Collection<Player> out = new ArrayList<>();
+            Collection<Resident> residents = new ArrayList<>();
+
+            return TownyAI.getTownyAIAPI().getAllCityStatesAsync().thenApply(cityStates -> {
+
+                for (var cityState : cityStates) {
+                    Town town = TownyAPI.getInstance().getTown(cityState);
+
+                    if (town != null)
+                        residents.addAll(town.getResidents());
+                }
+
+                for (Resident res : residents) {
+                    out.add(res.getPlayer());
+                }
+
+                return out;
+            }
+        );
     }
 }

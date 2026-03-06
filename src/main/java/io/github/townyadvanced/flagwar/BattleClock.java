@@ -38,12 +38,12 @@ public final class BattleClock {
      */
     private void start() {
 
-        long cycleRate = (long) Math.ceil(BannerWarConfig.getCycleSpeedSeconds() * 20L);
+        long secondsPerCycle = (long) Math.ceil(BannerWarConfig.getCycleSpeedSeconds() * 20L);
 
         CLOCK_TASK = SCHEDULER.runTaskTimer(
             PLUGIN,
             this::onCycle,
-            cycleRate, cycleRate);
+            secondsPerCycle, secondsPerCycle);
     }
 
     /**

@@ -17,6 +17,7 @@ public class BannerWarConfig {
     /** Holds an instance of FlagWar's logger. */
     private static final Logger LOGGER = PLUGIN.getLogger();
 
+
     public static long getCurrentTownyDay() {
         return PLUGIN.getConfig().getLong("universe.current_day");
     }
@@ -63,7 +64,6 @@ public class BannerWarConfig {
 
         return m;
     }
-
 
     public static Material getInfernalWarFlagMaterial() {
         Material m;
@@ -182,4 +182,9 @@ public class BannerWarConfig {
     public static int getDaysUntilBannerPlacerExpired() {
         return getFromWeariness("new_day.days_until_expired");
     }
+
+    public static double getWarEconomyDecrease() {
+        return PLUGIN.getConfig().getInt("civics.civtechs.war_economy.percentage_weariness_decrease");
+    }
+
 }

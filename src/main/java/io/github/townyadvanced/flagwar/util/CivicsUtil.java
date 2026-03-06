@@ -5,6 +5,7 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import io.github.townyadvanced.flagwar.FlagWar;
+import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -128,6 +129,9 @@ public final class CivicsUtil {
             PLUGIN.getLogger().warning("Cannot increase weariness by " + d + " because their town or nation is null!");
             return;
         }
+
+        double decimalDecrease = BannerWarConfig.getWarEconomyDecrease() / 100d;
+        if (isTechPresent(WAR_ECONOMY, resident)) d = d * decimalDecrease;
 
         Town town = resident.getTownOrNull();
         Nation nation = town.getNationOrNull();

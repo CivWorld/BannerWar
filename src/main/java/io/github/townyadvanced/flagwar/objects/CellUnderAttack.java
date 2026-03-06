@@ -83,13 +83,13 @@ public class CellUnderAttack extends Cell {
     /** Holds the number of extra lives that have been added to the {@link CellUnderAttack} since its construction. */
     private int lifeAdditions = 0;
 
-    /** Holds the repeating {@link BukkitTask} that updates the hologram. */
+    /** Holds the repeating {@link ScheduledTask} that updates the hologram. */
     private ScheduledTask hologramUpdateTask;
 
-    /** Holds the repeating {@link BukkitTask} that updates the time left. */
+    /** Holds the repeating {@link ScheduledTask} that updates the time left. */
     private ScheduledTask updateTimeTask;
 
-    /** Holds the {@link BukkitTask} that handles flag updates. */
+    /** Holds the {@link ScheduledTask} that handles flag updates. */
     private ScheduledTask flagUpdateTask;
 
     /** Holds the number of lives left required to initiate the {@link CivicsUtil#INFERNAL_WARFLAGS} CivTech, assuming the {@link #nameOfFlagOwner} has it. */
