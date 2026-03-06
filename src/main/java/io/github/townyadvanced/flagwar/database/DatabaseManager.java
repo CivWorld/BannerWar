@@ -36,6 +36,12 @@ public final class DatabaseManager {
             TownBlocks TEXT NOT NULL,
             InitialMayor TEXT NOT NULL
         );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS BannerPlacer (
+            Town TEXT PRIMARY KEY NOT NULL,
+            AttackDay INTEGER NOT NULL
+        );
         """
     );
 
@@ -86,7 +92,7 @@ public final class DatabaseManager {
     /**
      * Creates the directories required to store the database if they don't exist.
      * Also gets the connection and opens it.
-     * @throws SQLException
+     * @throws SQLException {@link DriverManager#getConnection(String)} is called here.
      */
     private void openConnection() throws SQLException {
         String url = "jdbc:sqlite:" + PATH.toAbsolutePath();

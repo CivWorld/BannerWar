@@ -17,8 +17,12 @@
 
 package io.github.townyadvanced.flagwar.events;
 
+import com.palmergames.bukkit.towny.TownyAPI;
+import com.palmergames.bukkit.towny.object.TownBlock;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
+import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.CellUnderAttack;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -46,6 +50,8 @@ public class CellAttackEvent extends Event implements Cancellable {
     private String reason = "None";
     /** Holds the time of the attack, as a {@link Long} value. */
     private Duration phaseDuration;
+    /** Holds the {@link Battle} that this {@link CellUnderAttack} is part of. */
+    private Battle battle;
 
     /** Return the event's {@link HandlerList}. */
     @Override
@@ -68,7 +74,11 @@ public class CellAttackEvent extends Event implements Cancellable {
         super();
         this.player = attacker;
         this.flagBlock = flagBaseBlock;
+        TownBlock block = TownyAPI.getInstance().getTownBlock(flagBaseBlock.getLocation());
+        if (block != null) battle = BannerWarAPI.getBattle(block);
+
         setPhaseDuration(FlagWarConfig.getFlagPhasesDuration());
+
     }
 
     /** @return the attacking {@link Player}. */
@@ -83,7 +93,7 @@ public class CellAttackEvent extends Event implements Cancellable {
 
     /** @return a new {@link CellUnderAttack} with the Towny instance, attacker, flag base, and attack time stored.  */
     public CellUnderAttack getData() {
-        return new CellUnderAttack(player.getName(), flagBlock, phaseDuration);
+        return new CellUnderAttack(player.getName(), flagBlock, phaseDuration, battle);
     }
 
     /**

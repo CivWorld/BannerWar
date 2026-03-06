@@ -1,6 +1,6 @@
 package io.github.townyadvanced.flagwar.command;
 
-import io.github.townyadvanced.flagwar.BattleManager;
+import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.util.FormatUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

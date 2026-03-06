@@ -14,13 +14,14 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Set;
 import java.util.logging.Logger;
 
+/** A class designed to copy chunks' {@link Material}s and {@link BlockData},
+ * working in tandem with {@link ChunkPaste} to achieve chunk persistence. **/
 public final class ChunkCopy {
 
     /** Holds the instance of this class. */
-    private static ChunkCopy INSTANCE;
+    private static ChunkCopy instance;
 
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
@@ -67,7 +68,6 @@ public final class ChunkCopy {
                     }
 
             SCHEDULER.runTaskAsynchronously(PLUGIN, () -> {
-                // test if this works and if not go back to the fw one.
                 File chunkFile = new File(CHUNK_PATH.resolve(Path.of(c.getX() + "_" + c.getZ())).toString());
                 chunkFile.getParentFile().mkdirs();
 
@@ -100,15 +100,15 @@ public final class ChunkCopy {
     }
 
     /**
-     * Returns the {@link ChunkCopy#INSTANCE}.
+     * Returns the {@link ChunkCopy#instance}.
      */
     public static ChunkCopy getInstance() {
 
-        if (INSTANCE == null) {
-            INSTANCE = new ChunkCopy(JavaPlugin.getProvidingPlugin(FlagWar.class));
-            return INSTANCE;
+        if (instance == null) {
+            instance = new ChunkCopy(JavaPlugin.getProvidingPlugin(FlagWar.class));
+            return instance;
         }
 
-        return INSTANCE;
+        return instance;
     }
 }
