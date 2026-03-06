@@ -9,8 +9,8 @@ import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.BattleManager;
-import io.github.townyadvanced.flagwar.Civics;
+import io.github.townyadvanced.flagwar.managers.BattleManager;
+import io.github.townyadvanced.flagwar.util.CivicsUtil;
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import io.github.townyadvanced.flagwar.events.BattleEndEvent;
 import io.github.townyadvanced.flagwar.events.CellAttackEvent;
@@ -32,7 +32,7 @@ public class WearinessListener implements Listener {
     /** Holds the {@link BattleManager} instance. */
     private final BattleManager BATTLE_MANAGER;
 
-    public WearinessListener(BattleManager battleManager, JavaPlugin plugin) {
+    public WearinessListener(JavaPlugin plugin, BattleManager battleManager) {
         this.PLUGIN = plugin;
         this.BATTLE_MANAGER = battleManager;
     }
@@ -47,7 +47,7 @@ public class WearinessListener implements Listener {
 
         Resident r = TownyAPI.getInstance().getResident(e.getPlayer());
 
-        Civics.increaseWeariness(r, 1); // TODO MAKE CONFIGURABLE
+        CivicsUtil.increaseWeariness(r, BannerWarConfig.getFlagPlaceAttackerIncrease());
 
     }
 
@@ -64,12 +64,18 @@ public class WearinessListener implements Listener {
 
         Resident r = TownyAPI.getInstance().getResident(e.getCell().getAttackData().getNameOfFlagOwner());
 
-        Civics.increaseWeariness(r, 1); // TODO MAKE CONFIGURABLE
+        CivicsUtil.increaseWeariness(r, BannerWarConfig.getFlagDefendAttackerWeariness());
 
-        if (Civics.isFederation(battle.getDefender()))
-            Civics.decreaseWeariness(battle.getContestedTown(), 1);
+
+        int weariness = BannerWarConfig.getFlagDefendDefenderWeariness();
+
+        // we don't want to risk using decreaseWeariness(initialMayor) because what if the mayor
+        // left for any reason?
+
+        if (CivicsUtil.isFederation(battle.getDefender()))
+            CivicsUtil.decreaseWeariness(battle.getContestedTown(), weariness);
         else
-            Civics.decreaseWeariness(battle.getDefender(), 1);
+            CivicsUtil.decreaseWeariness(battle.getDefender(), weariness);
     }
 
 
@@ -89,42 +95,50 @@ public class WearinessListener implements Listener {
 
         Resident r = TownyAPI.getInstance().getResident(flagOwner);
 
-        Civics.increaseWeariness(r, 1); // TODO MAKE CONFIGURABLE
+        CivicsUtil.increaseWeariness(r, BannerWarConfig.getFlagWinAttackerIncrease());
 
     }
 
     @EventHandler
     public void onBattleEnd(BattleEndEvent e) {
         Battle battle = e.getBattle();
-        // TODO MAKE ALL THIS CONFIGURABLE
 
         var att = battle.getAttacker();
         var def = battle.getDefender();
 
         if (e.isDefenseWon()) {
-            Civics.increaseWeariness(att, Civics.isAutocracy(att) ? 50 : 10);
-            Civics.decreaseWeariness(def, Civics.isAutocracy(def) ? 25 : 10);
+
+            int attackerIncrease = BannerWarConfig.getDefenseWonAttackerIncrease(CivicsUtil.isAutocracy(att));
+            int defenderDecrease = BannerWarConfig.getDefenseWonDefenderDecrease(CivicsUtil.isAutocracy(def));
+
+            CivicsUtil.increaseWeariness(att, attackerIncrease);
+            CivicsUtil.decreaseWeariness(def, defenderDecrease);
         }
         else {
-            if  (Civics.isAutocracy(att)) Civics.decreaseWeariness(att, 10);
-            Civics.increaseWeariness(def, Civics.isAutocracy(def) ? 50 : 10);
+
+            int attackerDecrease = BannerWarConfig.getDefenseLostAttackerDecrease(CivicsUtil.isAutocracy(att));
+            int defenderIncrease = BannerWarConfig.getDefenseLostDefenderIncrease(CivicsUtil.isAutocracy(def));
+
+
+            CivicsUtil.decreaseWeariness(att, attackerDecrease);
+            CivicsUtil.increaseWeariness(def, defenderIncrease);
         }
     }
 
     @EventHandler
     public void onTownLeave(TownLeaveEvent e) {
 
-        // TODO im not repeating myself
         Town t = e.getTown();
         Nation n = t.getNationOrNull();
+        int threshold = BannerWarConfig.getTownLeaveWearinessThreshold();
 
-        if (Civics.isFederation(n)) {
-            if (Civics.getWearinessAsPercentage(t) >= 15) {
+        if (CivicsUtil.isFederation(n)) {
+            if (CivicsUtil.getWearinessAsPercentage(t) >= threshold) {
                 e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its war weariness exceeds 15!"));
                 e.setCancelled(true);
             }
         }
-        else if (Civics.getWearinessAsPercentage(n) >= 15) {
+        else if (CivicsUtil.getWearinessAsPercentage(n) >= threshold) {
             e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its nation's war weariness exceeds 15!"));
             e.setCancelled(true);
 
@@ -136,24 +150,26 @@ public class WearinessListener implements Listener {
     public void onNewTownyDay(NewDayEvent e) {
 
         BannerWarConfig.incrementTownyDay();
+        int guaranteedDecrease = BannerWarConfig.getNewDayWearinessDecrease();
+        int expiredDecrease = BannerWarConfig.getNewDayExpiredDecrease();
 
         // guaranteed weariness decrease.
         Collection<Nation> allNations = TownyUniverse.getInstance().getNations();
         for (Nation n : allNations) {
-            if (Civics.isFederation(n)) Civics.decreaseWeariness(n, 2);
+            if (CivicsUtil.isFederation(n)) CivicsUtil.decreaseWeariness(n, guaranteedDecrease);
 
             else for (var town : n.getTowns())
-                    Civics.decreaseWeariness(town, 2);
+                    CivicsUtil.decreaseWeariness(town, guaranteedDecrease);
         }
 
-
-        BATTLE_MANAGER.getAllExpiredBannerPlacers(7).thenAccept(bannerPlacers ->
+        // 7 day expiration decrease.
+        BATTLE_MANAGER.getAllExpiredBannerPlacers(BannerWarConfig.getDaysUntilBannerPlacerExpired()).thenAccept(bannerPlacers ->
             bannerPlacers.forEach(placer -> {
                 if (placer.getNationOrNull() != null
-                    && Civics.isFederation(placer.getNationOrNull()))
-                        Civics.decreaseWeariness(placer.getNationOrNull(), 3); // TODO make configurable, original number was 5% so i just stacked 3% and the guaranteed 2%.
+                    && !CivicsUtil.isFederation(placer.getNationOrNull()))
+                        CivicsUtil.decreaseWeariness(placer.getNationOrNull(), expiredDecrease);
 
-                else Civics.decreaseWeariness(placer, 3);
+                else CivicsUtil.decreaseWeariness(placer, expiredDecrease);
             })
         );
     }

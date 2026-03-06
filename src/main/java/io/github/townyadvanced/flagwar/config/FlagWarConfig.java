@@ -18,7 +18,7 @@ package io.github.townyadvanced.flagwar.config;
 
 import com.palmergames.bukkit.util.Colors;
 import com.palmergames.util.TimeTools;
-import io.github.townyadvanced.flagwar.Civics;
+import io.github.townyadvanced.flagwar.util.CivicsUtil;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.util.Messaging;
 import org.bukkit.Material;
@@ -101,7 +101,7 @@ public final class FlagWarConfig {
             || material == getFlagBaseMaterial()
             || material == getFlagLightMaterial()
             || material == getBeaconWireFrameMaterial()
-            || material == Material.ANCIENT_DEBRIS; // TODO: MAKE CONFIGURABLE
+            || material == BannerWarConfig.getInfernalWarFlagMaterial();
     }
 
     /**
@@ -361,7 +361,7 @@ public final class FlagWarConfig {
     public static Duration getFlagLifeTime(Player p) {
 
         Duration out = getFlagLifeTime();
-        if (Civics.isTechPresent(Civics.ATTRITION_DOCTRINE, p))
+        if (CivicsUtil.isTechPresent(CivicsUtil.ATTRITION_DOCTRINE, p))
             out = out.plusSeconds(10);
 
         return out;
@@ -391,11 +391,11 @@ public final class FlagWarConfig {
 
     /**
      * Get the {@link Duration} of each timer-material phase in a war flag's lifecycle.
-     * @param p the player whose {@link Civics} are applied
+     * @param p the player whose {@link CivicsUtil} are applied
      * @return The Flag Life-time, divided by the length of {@link #getTimerBlocks()}.
      */
     public static Duration getFlagPhasesDuration(Player p) {
-        if (Civics.isTechPresent(Civics.ATTRITION_DOCTRINE, p)) {
+        if (CivicsUtil.isTechPresent(CivicsUtil.ATTRITION_DOCTRINE, p)) {
             return (getFlagLifeTime(p)).dividedBy(getTimerBlocks().length);
         }
         return getFlagLifeTime().dividedBy(getTimerBlocks().length);

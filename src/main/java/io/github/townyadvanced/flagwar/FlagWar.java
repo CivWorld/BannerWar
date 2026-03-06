@@ -38,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
 import io.github.townyadvanced.flagwar.command.todelete;
+import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.database.DatabaseManager;
@@ -49,6 +50,8 @@ import io.github.townyadvanced.flagwar.events.CellWonEvent;
 import io.github.townyadvanced.flagwar.i18n.LocaleUtil;
 import io.github.townyadvanced.flagwar.i18n.Translate;
 import io.github.townyadvanced.flagwar.listeners.*;
+import io.github.townyadvanced.flagwar.managers.BattleManager;
+import io.github.townyadvanced.flagwar.managers.WaypointManager;
 import io.github.townyadvanced.flagwar.objects.Cell;
 import io.github.townyadvanced.flagwar.objects.CellUnderAttack;
 
@@ -67,6 +70,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.github.townyadvanced.flagwar.util.Broadcasts;
+import io.github.townyadvanced.flagwar.util.CivicsUtil;
 import io.github.townyadvanced.flagwar.util.Messaging;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -137,6 +141,8 @@ public class FlagWar extends JavaPlugin {
     private BattleClock battleClock;
     /** Holds instance of the {@link BattleManager}. */
     private BattleManager battleManager;
+    /** Holds instance of the {@link WaypointManager} */
+    private WaypointManager wayPointManager;
 
     /**
      * Initializes the Scheduler object based on whether we're using Folia/Paper or Spigot/Bukkit.
@@ -152,7 +158,7 @@ public class FlagWar extends JavaPlugin {
 
         setInstance();
         initializeInstances();
-        Civics.init();
+        CivicsUtil.init();
 
         if (loadConfig()) {
             setLocale();
@@ -165,9 +171,7 @@ public class FlagWar extends JavaPlugin {
             bStatsKickstart();
 
             new TownyAdminReloadAddon();
-            getCommand("StageAdvance").setExecutor(new StageAdvance(this));
-            getCommand("GetBattles").setExecutor(new todelete());
-
+            getCommands();
         }
     }
 
@@ -196,13 +200,18 @@ public class FlagWar extends JavaPlugin {
 
         battleClock.kill();
         BattleManager.deleteBossBars();
-        Civics.unRegisterCivTechs();
+        CivicsUtil.unRegisterCivTechs();
 
         if (!ATTACK_HASH_MAP.isEmpty()) {
             for (CellUnderAttack cell : new ArrayList<>(ATTACK_HASH_MAP.values())) {
                 attackCanceled(cell);
             }
         }
+    }
+
+    private void getCommands() {
+        getCommand("StageAdvance").setExecutor(new StageAdvance(this));
+        getCommand("GetBattles").setExecutor(new todelete());
     }
 
     private void setLocale() {
@@ -254,6 +263,7 @@ public class FlagWar extends JavaPlugin {
         PLUGIN_MANAGER.registerEvents(warzoneListener, this);
         PLUGIN_MANAGER.registerEvents(outlawListener, this);
         PLUGIN_MANAGER.registerEvents(battleListener, this);
+        PLUGIN_MANAGER.registerEvents(wearinessListener, this);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.events.registered"));
     }
 
@@ -261,8 +271,9 @@ public class FlagWar extends JavaPlugin {
     public void initializeInstances() {
         databaseManager = new DatabaseManager(this);
         databaseInteraction = new DatabaseInteraction(getLogger(), databaseManager);
-        battleManager = new BattleManager(this, databaseInteraction);
+        battleManager = new BattleManager(this, databaseInteraction, wayPointManager);
         battleClock = new BattleClock(this, battleManager);
+        wayPointManager = new WaypointManager(this);
     }
 
     /** Initialize Event Listeners. */
@@ -273,8 +284,8 @@ public class FlagWar extends JavaPlugin {
         flagWarEntityListener = new FlagWarEntityListener();
         warzoneListener = new WarzoneListener();
         outlawListener = new OutlawListener();
-        battleListener = new BattleListener(this);
-        wearinessListener = new WearinessListener(battleManager, this);
+        battleListener = new BattleListener(this, battleManager);
+        wearinessListener = new WearinessListener(this, battleManager);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialized"));
     }
 
@@ -608,7 +619,7 @@ public class FlagWar extends JavaPlugin {
         }
 
         long delay = 0;
-        if (Civics.isTechPresent(Civics.CAESAR_CIPHER, attackingResident)) delay = 200;
+        if (CivicsUtil.isTechPresent(CivicsUtil.CAESAR_CIPHER, attackingResident)) delay = BannerWarConfig.getCaesarCipherDelay();
 
         String finalCoordinates = coordinates;
 

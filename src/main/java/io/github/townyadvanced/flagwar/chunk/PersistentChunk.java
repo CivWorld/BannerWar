@@ -4,6 +4,7 @@ import org.bukkit.Chunk;
 
 import java.util.ArrayList;
 import java.util.Collection;
+
 // perhaps a useless chunk is a chunk containing null info, and empty chunks contain empty arrays?
 /**
  * An object of this class contains enough information to be utilized by {@link ChunkCopy} and {@link ChunkPaste}

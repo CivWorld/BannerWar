@@ -19,7 +19,8 @@ package io.github.townyadvanced.flagwar.objects;
 
 import com.palmergames.bukkit.towny.scheduling.ScheduledTask;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.Civics;
+import io.github.townyadvanced.flagwar.config.BannerWarConfig;
+import io.github.townyadvanced.flagwar.util.CivicsUtil;
 import io.github.townyadvanced.flagwar.util.HologramUtil;
 import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.scheduling.TaskScheduler;
@@ -37,8 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -81,7 +80,7 @@ public class CellUnderAttack extends Cell {
     /** Holds the number of lives the {@link CellUnderAttack} has. */
     private int lives = 1;
 
-    /** Holds the number of lives that have been added to the {@link CellUnderAttack} since its construction. */
+    /** Holds the number of extra lives that have been added to the {@link CellUnderAttack} since its construction. */
     private int lifeAdditions = 0;
 
     /** Holds the repeating {@link BukkitTask} that updates the hologram. */
@@ -93,7 +92,7 @@ public class CellUnderAttack extends Cell {
     /** Holds the {@link BukkitTask} that handles flag updates. */
     private ScheduledTask flagUpdateTask;
 
-    /** Holds the number of lives left required to initiate the {@link Civics#INFERNAL_WARFLAGS} CivTech, assuming the {@link #nameOfFlagOwner} has it. */
+    /** Holds the number of lives left required to initiate the {@link CivicsUtil#INFERNAL_WARFLAGS} CivTech, assuming the {@link #nameOfFlagOwner} has it. */
     private static final int LIVES_TO_INFERNAL = 3;
 
     /**
@@ -110,10 +109,10 @@ public class CellUnderAttack extends Cell {
         this.flagTimeLeft = FlagWarConfig.getFlagLifeTime();
         this.flagPhaseDuration = timerPhase;
 
-        if (Civics.isTechPresent(Civics.ATTRITION_DOCTRINE, battle.getInitialMayor())
+        if (CivicsUtil.isTechPresent(CivicsUtil.ATTRITION_DOCTRINE, battle.getInitialMayor())
             && BannerWarAPI.isAssociatedWithAttacker(flagOwner, battle))
         {
-            flagTimeLeft = flagTimeLeft.plusSeconds(10); // TODO: make configurable
+            flagTimeLeft = flagTimeLeft.plusSeconds(BannerWarConfig.getAttritionFlagLifeTimeIncrease());
         }
 
         this.nameOfFlagOwner = flagOwner;
@@ -475,9 +474,8 @@ public class CellUnderAttack extends Cell {
      * @return whether a life has been added
      */
     public boolean tryAddLife() {
-        if (lifeAdditions == 3) return false; // TODO MAKE CONFIGURABLE
-
-        flagTimeLeft = flagTimeLeft.plusSeconds(5); // TODO MAKE CONFIGURABLE
+        if (lifeAdditions == BannerWarConfig.getExtraFlagLives()) return false;
+        flagTimeLeft = flagTimeLeft.plusSeconds(BannerWarConfig.getFlagLifeTimeIncrease());
 
         lives++;
         lifeAdditions++;
@@ -529,18 +527,25 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
-     * Applies the {@link Civics#INFERNAL_WARFLAGS} effect on a flag, where 20 seconds is added to its lifetime
+     * Applies the {@link CivicsUtil#INFERNAL_WARFLAGS} effect on a flag, where 20 seconds is added to its lifetime
      * and its timer block is replaced by ancient debris by default.
      */
     private void makeInfernal() {
-        flagTimeLeft = flagTimeLeft.plusSeconds(20); // TODO MAKE CONFGIURABLE
-        flagTimerBlock.setType(Material.ANCIENT_DEBRIS); // TODO: MAKE CONFIGURABLE
+        flagTimeLeft = flagTimeLeft.plusSeconds(BannerWarConfig.getInfernalLifeTimeIncrease());
+        flagTimerBlock.setType(BannerWarConfig.getInfernalWarFlagMaterial());
     }
 
     /**
-     * Returns whether this {@link CellUnderAttack} should have the {@link Civics#INFERNAL_WARFLAGS} effect applied to it.
+     * Returns whether this {@link CellUnderAttack} should have the {@link CivicsUtil#INFERNAL_WARFLAGS} effect applied to it.
      */
     private boolean isInfernal() {
-        return lives == LIVES_TO_INFERNAL && Civics.isTechPresent(Civics.INFERNAL_WARFLAGS, nameOfFlagOwner);
+        return lives == LIVES_TO_INFERNAL && CivicsUtil.isTechPresent(CivicsUtil.INFERNAL_WARFLAGS, nameOfFlagOwner);
+    }
+
+    /**
+     * Returns the number of lives that have been added to this {@link CellUnderAttack}.
+     */
+    public int getLifeAdditions() {
+        return lifeAdditions;
     }
 }

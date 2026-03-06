@@ -1,14 +1,20 @@
-package io.github.townyadvanced.flagwar;
+package io.github.townyadvanced.flagwar.managers;
 
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
+import com.palmergames.bukkit.towny.object.TownBlock;
+import com.palmergames.bukkit.towny.object.WorldCoord;
+import io.github.townyadvanced.flagwar.BannerWarAPI;
+import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.database.DatabaseInteraction;
+import io.github.townyadvanced.flagwar.events.BattleResumeEvent;
 import io.github.townyadvanced.flagwar.events.BattleStartEvent;
-import io.github.townyadvanced.flagwar.objects.BannerPlacerRecord;
-import io.github.townyadvanced.flagwar.objects.Battle;
-import io.github.townyadvanced.flagwar.objects.BattleRecord;
+import io.github.townyadvanced.flagwar.objects.*;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -25,12 +31,16 @@ public final class BattleManager {
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
 
+    /** Holds the {@link WaypointManager} instance. */
+    private final WaypointManager WAYPOINT_MANAGER;
+
     /** Holds a {@link HashMap} of every {@link Battle} and its associated contested town's name. */
     private static final Map<String, Battle> ACTIVE_BATTLES = new HashMap<>();
 
-    public BattleManager(JavaPlugin plugin, DatabaseInteraction databaseInteraction) {
+    public BattleManager(JavaPlugin plugin, DatabaseInteraction databaseInteraction, WaypointManager waypointManager) {
         DATABASE_INTERACTION = databaseInteraction;
         PLUGIN = plugin;
+        WAYPOINT_MANAGER = waypointManager;
         resumeBattles();
     }
 
@@ -42,8 +52,10 @@ public final class BattleManager {
 
         DATABASE_INTERACTION.getBattles().thenAccept(battleRecords -> {
             for (BattleRecord r : battleRecords) {
-                ACTIVE_BATTLES.put(r.contestedTown(), new Battle(r));
+                Battle battle = new Battle(r);
+                ACTIVE_BATTLES.put(r.contestedTown(), battle);
                 PLUGIN.getLogger().info("Battle " + r.contestedTown() + " has been resumed");
+                Bukkit.getPluginManager().callEvent(new BattleResumeEvent(battle));
             }
         });
     }
@@ -63,8 +75,20 @@ public final class BattleManager {
             Battle battle = entry.getValue();
 
             if (battle.isPendingStageAdvance()) battle.advanceStage(true);
-
             battle.updateBossBar();
+
+            var associated = BannerWarAPI.getAssociatedPlayers(battle);
+            var notAssociated = BannerWarAPI.getNonAssociatedPlayers(battle);
+
+            for (String flagOwner : battle.getCellsUnderAttack()) {
+                WAYPOINT_MANAGER.addPlayersToWaypoint(
+                    associated, flagOwner
+                );
+
+                WAYPOINT_MANAGER.removePlayersFromWaypoint(
+                    notAssociated, flagOwner
+                );
+            }
 
             DATABASE_INTERACTION.insertOrUpdate(BattleRecord.of(battle));
         }
@@ -76,13 +100,14 @@ public final class BattleManager {
      * @param attacker the nation that initiated the {@link Battle}
      * @param defender the nation that houses the {@link Town} where the {@link Battle} is hosted
      */
-    public static void startBattle(Town contestedTown, Nation attacker, Nation defender) {
+    public void startBattle(Town contestedTown, Nation attacker, Nation defender, Town bannerPlacer) {
 
         Battle battle = new Battle(attacker, defender, contestedTown, false);
         ACTIVE_BATTLES.put(contestedTown.getName(), battle);
-        System.out.println("Battle to be backed up by nonexistent chunk backing up functions.");
 
-        Bukkit.getServer().getPluginManager().callEvent(new BattleStartEvent(battle));
+        logBannerPlacer(BannerPlacerRecord.of(bannerPlacer));
+
+        Bukkit.getServer().getPluginManager().callEvent(new BattleStartEvent(battle, bannerPlacer));
     }
 
     /**
@@ -142,5 +167,72 @@ public final class BattleManager {
             });
             return out;
         });
+    }
+
+
+    /**
+     * Registers to the relevant {@link Battle} that a {@link CellUnderAttack} was won by the attacker.
+     * @param c the {@link CellUnderAttack} in question
+     * @return whether the victory of this {@link CellUnderAttack} resulted in the end of the battle due to home block capturing.
+     */
+    public boolean registerAttackWon(CellUnderAttack c) {
+        TownBlock tb = TownyAPI.getInstance().getTownBlock(new WorldCoord(c.getWorldName(), c.getX(), c.getZ()));
+
+        Battle battle = BannerWarAPI.getBattle(tb);
+        if (battle == null) {
+            PLUGIN.getLogger().warning("The flag placed by " + c.getNameOfFlagOwner() + " is flagging during a null battle!");
+            return false;
+        }
+
+        if (battle.getContestedTown().isHomeBlock(tb)) {
+            WAYPOINT_MANAGER.deleteWaypoint(c.getNameOfFlagOwner());
+            battle.loseDefense(); // check if this code works, if not, bring it back.
+            return true;
+        }
+
+        else {
+            WAYPOINT_MANAGER.deleteWaypoint(c.getNameOfFlagOwner());
+            battle.removeFlag(c.getNameOfFlagOwner());
+            return false;
+        }
+    }
+
+    /**
+     * Registers to the relevant {@link Battle} that a {@link CellUnderAttack} was lost by the attacker.
+     * @param c the {@link CellUnderAttack} in question
+     */
+    public void registerAttackLost(Cell c) {
+
+        TownBlock tb = TownyAPI.getInstance().getTownBlock(new WorldCoord(c.getWorldName(), c.getX(), c.getZ()));
+
+        Battle battle = BannerWarAPI.getBattle(tb);
+        if (battle == null) {
+            PLUGIN.getLogger().warning("The flag" + c.getX() + "-" + c.getZ() + " is flagging during a null battle!");
+            return;
+        }
+
+        String flagOwner = c.getAttackData().getNameOfFlagOwner();
+        battle.removeFlag(flagOwner);
+        WAYPOINT_MANAGER.deleteWaypoint(flagOwner);
+    }
+
+    /**
+     * Registers to the relevant {@link Battle} that a {@link CellUnderAttack} has been started by the attacker.
+     * @param flagBase the flag base block of the new cell
+     * @param nameOfFlagOwner the name of the player who placed the flag
+     */
+    public void registerAttackStarted(String nameOfFlagOwner, Block flagBase) {
+
+        Battle battle = BannerWarAPI.getBattle(TownyAPI.getInstance().getTownBlock(flagBase.getLocation()));
+        if (battle == null) {
+            PLUGIN.getLogger().warning("The flag placed by " + nameOfFlagOwner + " is flagging during a null battle!");
+            return;
+        }
+
+        var cellUnderAttack = FlagWar.getCellsUnderAttackByPlayer(nameOfFlagOwner);
+        if (!cellUnderAttack.isEmpty())
+            WAYPOINT_MANAGER.createWaypoint(FlagWar.getCellsUnderAttackByPlayer(nameOfFlagOwner).get(0));
+
+        battle.addFlag(nameOfFlagOwner);
     }
 }

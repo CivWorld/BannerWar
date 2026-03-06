@@ -1,9 +1,11 @@
-package io.github.townyadvanced.flagwar;
+package io.github.townyadvanced.flagwar.util;
 
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
+import io.github.townyadvanced.flagwar.FlagWar;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.flintstqne.townyCivics.CivTech.CivTech;
@@ -11,9 +13,9 @@ import org.flintstqne.townyCivics.CivTech.CivTechRarity;
 import org.flintstqne.townyCivics.CivTech.CivTechType;
 import org.flintstqne.townyCivics.api.TownyCivicsAPI;
 
-public final class Civics {
+public final class CivicsUtil {
 
-    private Civics() { }
+    private CivicsUtil() {}
 
     /** Holds the {@link TownyCivicsAPI} that this class interacts with. */
     private static TownyCivicsAPI api;
@@ -70,8 +72,10 @@ public final class Civics {
 
     /** Initialization steps such as getting the {@link #api} and registering the {@link CivTech}s.  */
     public static void init() {
-        api = TownyCivicsAPI.getInstance();
-        registerCivTechs();
+        Bukkit.getScheduler().runTaskLater(PLUGIN, () -> {
+            api = TownyCivicsAPI.getInstance();
+            registerCivTechs();
+        }, 1);
     }
 
     /**

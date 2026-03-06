@@ -143,7 +143,7 @@ economy:
     war_flag_cost: 10.0
     attack_defended_reward: 10.0
 
-# Define what is allowed to take place in TownBlocks which have attacks on-going.
+# Define what is allowed to take place in TownBlocks which have attacks ongoing.
 warzone:
     # List of materials that can be modified in a warzone.
     # '*' = Allow all materials.
@@ -166,9 +166,115 @@ extra:
     # If enabled, show additional debug messages as warnings. Recommended keeping these disabled unless requested.
     debug: false
 
+#######################################
+# BANNERWAR CONFIGURATIONS START HERE #
+#######################################
 
-
-# BANNERWAR CONFIGURATIONS START HERE.
-
+# Define global information about the server that this plugin runs on.
 universe:
+    # The number of Towny days that have passed since the plugin was installed,
+    # assuming the plugin was enabled during the new day event.
+    # Do NOT modify this unless you are willing to mess with upkeep values.
     current_day: 1
+
+
+# Define price, item of payment and other actions relating to the flag lives system.
+flag_lives:
+    # How many lives you can add.
+    count: 3
+
+    # How long the flag's lifetime is extended by every life addition. Measured in seconds.
+    lifetime_increase: 5
+
+    # The item used to make payments for flag life increases. Case-insensitive.
+    # If the item is not recognized, gold ingots will be used by default.
+    item_of_payment: gold_ingot
+
+    # The base price of the configured item of payment. This is NOT the price of flag life increases.
+    # The price of a flag life increase is calculated using p = b * 2^n,
+    # where p is the price, b is the base price as can be configured below,
+    # and n is the nth added life to this flag.
+    # E.g. a base price of 4 would mean that the second extra life costs 4 * 2^2 = 16 items.
+    base_price: 4
+
+# Define settings relating to the internal clock that updates battles, database storage and GUI information.
+clock:
+
+    # The rate at which the clock ticks; the clock speed. Measured in seconds per cycle.
+    # Increase this number if your server is struggling to accommodate a large number of battles.
+    # Decrease this number if you find that battles are not updating fast enough.
+    # All non-negative and non-zero numbers are permitted, including fractions.
+    cycle_speed: 3
+
+
+# Define various values, settings and percentages to be applied to TownyCivics related actions.
+civics:
+
+    # Define configurations for all CivTechs that this plugin incorporates.
+    civtechs:
+
+        # Define configurations of the "Infernal War Flags" CivTech.
+        infernal_warflags:
+
+            # The block used to represent an infernal flag. Case-insensitive
+            # If the material is not recognized, ancient debris will be used by default.
+            material: ancient_debris
+
+            # How long the flag's lifetime is extended by the activation of this CivTech.
+            # Measured in seconds.
+            lifetime_increase: 20
+
+        # Define configurations of the "Caesar Cipher" CivTech.
+        caesar_cipher:
+
+            # The delay of flag position announcements. Measured in seconds.
+            delay: 10
+
+        # Define configurations of the "Attrition Doctrine" CivTech.
+        attrition_doctrine:
+
+            # How long the flag's lifetime is extended at the start of every flag place by the presence of this CivTech.
+            lifetime_increase: 10
+
+    # Define various percentage increases, decreases and thresholds of war weariness
+    # associated with battle-related actions.
+    war_weariness:
+
+        # Define the weariness percentage changes due to a flag place.
+        flag_place:
+            attacker_increase: 1
+
+        # Define the weariness percentage changes due to a flag defense.
+        flag_defend:
+            attacker_increase: 1
+            defender_decrease: 1
+
+        # Define the weariness percentage changes due to a flag victory.
+        flag_win:
+            attacker_increase: 1
+
+        # Define the weariness percentage changes due to a successful battle defense.
+        defense_won:
+            attacker:
+                autocracy_increase: 50
+                non_autocracy_increase: 10
+            defender:
+                autocracy_decrease: 25
+                non_autocracy_decrease: 10
+
+        # Define the weariness percentage changes due to a failed battle defense.
+        defense_lost:
+            attacker:
+                autocracy_decrease: 10
+            defender:
+                autocracy_increase: 50
+                non_autocracy_increase: 10
+
+        # Define the weariness percentage threshold until you can no longer leave a town.
+        town_leave_threshold: 15
+
+        # Define the weariness percentage changes due to a new day.
+        new_day:
+            guaranteed_decrease: 2
+            expired_banner_placer_decrease: 3
+            days_until_expired: 7

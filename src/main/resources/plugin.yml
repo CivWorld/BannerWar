@@ -21,6 +21,8 @@ folia-supported: true
 softdepend:
     - DecentHolograms
     - WorldEdit
+    - PlayerLocatorAPI
+    - TownyAI
 
 depend:
     - Towny

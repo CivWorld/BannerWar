@@ -5,8 +5,14 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
+import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 public final class BannerWarAPI {
     private BannerWarAPI() {}
@@ -29,7 +35,7 @@ public final class BannerWarAPI {
         return battle.getCurrentStage() != BattleStage.DORMANT;
     }
 
-     /**
+    /**
      * Returns whether the {@link Town} is already under a battle by the same or a different {@link Nation}.
      * @param townName the specified {@link Town}'s name
      */
@@ -123,5 +129,40 @@ public final class BannerWarAPI {
      */
     public static boolean isAssociatedWithBattle(Resident r,  Battle battle) {
         return isAssociatedWithAttacker(r, battle) || isAssociatedWithDefender(r, battle);
+    }
+
+
+    /**
+     * Returns a {@link Collection} of every associated player to a {@link Battle}
+     * by adding them if {@link #isAssociatedWithBattle(Resident, Battle)} returns true for them.
+     * <p>
+     * This list excludes townyAI bots.
+     * @param battle the battle
+     */
+    public static Collection<Player> getAssociatedPlayers(Battle battle) {
+
+        Collection<Player> out = new ArrayList<>();
+
+        for (var p : Bukkit.getOnlinePlayers()) {
+            Resident r = TownyAPI.getInstance().getResident(p);
+            if (isAssociatedWithBattle(r, battle)) out.add(p);
+        }
+
+        return out;
+    }
+
+    /**
+     * Returns a {@link Collection} of every player that is NOT associated to a {@link Battle}
+     * by adding them if they are part of {@link Bukkit#getOnlinePlayers()} and not part of {@link #getAssociatedPlayers(Battle)}.
+     * <p>
+     * This list excludes townyAI bots.
+     * @param battle the battle
+     */
+    public static Collection<Player> getNonAssociatedPlayers(Battle battle) {
+
+        var out = (Collection<Player>) Bukkit.getOnlinePlayers();
+        out.removeAll(getAssociatedPlayers(battle));
+
+        return out;
     }
 }

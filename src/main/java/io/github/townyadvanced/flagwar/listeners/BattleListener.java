@@ -7,7 +7,8 @@ import com.palmergames.bukkit.towny.event.TownPreClaimEvent;
 import com.palmergames.bukkit.towny.event.actions.TownyBuildEvent;
 import com.palmergames.bukkit.towny.object.*;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.BattleManager;
+import io.github.townyadvanced.flagwar.config.BannerWarConfig;
+import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.objects.CellUnderAttack;
 import io.github.townyadvanced.flagwar.util.Broadcasts;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
@@ -34,12 +35,16 @@ public class BattleListener implements Listener {
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
 
+    /** Holds the {@link BattleManager} instance. */
+    private final BattleManager BATTLE_MANAGER;
+
     /** The error message for a minimum number of players. */
     private static final String PLAYERS_ONLINE_ERROR =
-        "There must be a minimum of %s online in %s for a battle to occur!"; // TODO MAKE CONFIGURABLE
+        "There must be a minimum of %s online in %s for a battle to occur!";
 
-    public BattleListener(final JavaPlugin plugin) {
+    public BattleListener(final JavaPlugin plugin, final BattleManager manager) {
         this.PLUGIN = plugin;
+        this.BATTLE_MANAGER = manager;
     }
 
     @EventHandler (priority = EventPriority.HIGH)
@@ -140,7 +145,7 @@ public class BattleListener implements Listener {
         }
 
         event.setCancelled(false);
-        BattleManager.startBattle(town, attacker, defender);
+        BATTLE_MANAGER.startBattle(town, attacker, defender, r.getTownOrNull());
     }
 
     @EventHandler
@@ -178,7 +183,7 @@ public class BattleListener implements Listener {
     @EventHandler
     public void onTownDisband(DeleteTownEvent e) {
         for (var b : BattleManager.getActiveBattles()) {
-            if (!b.isActive()) return;
+            if (!b.isActive()) continue;
             if (b.getContestedTown().getName().equals(e.getTownName())) b.loseDefense();
         }
     }
@@ -186,7 +191,7 @@ public class BattleListener implements Listener {
     @EventHandler
     public void onNationDisband(DeleteNationEvent e) {
         for (var b : BattleManager.getActiveBattles()) {
-            if (!b.isActive()) return;
+            if (!b.isActive()) continue;
             if (b.getAttacker().getName().equals(e.getNationName())) b.winDefense();
             if (b.getDefender().getName().equals(e.getNationName())) b.loseDefense();
         }
@@ -202,44 +207,28 @@ public class BattleListener implements Listener {
 
     @EventHandler
     public void onFlagStart(CellAttackEvent e) {
-        Battle battle = BannerWarAPI.getBattle(TownyAPI.getInstance().getTownBlock(e.getFlagBlock().getLocation()));
-        if (battle == null) {
-            PLUGIN.getLogger().warning("The flag placed by " + e.getData().getNameOfFlagOwner() + " is flagging during a null battle!");
-            return;
-        }
-        battle.addFlag(e.getData().getNameOfFlagOwner());
+
+        var c = e.getData();
+        String flagOwner = c.getNameOfFlagOwner();
+        Block fbb = c.getFlagBaseBlock();
+
+        BATTLE_MANAGER.registerAttackStarted(flagOwner, fbb);
+
     }
 
     @EventHandler
     public void onFlagAttackWon(CellWonEvent e) {
         var c = e.getCellUnderAttack();
-        TownBlock tb = TownyAPI.getInstance().getTownBlock(new WorldCoord(c.getWorldName(), c.getX(), c.getZ()));
 
-        Battle battle = BannerWarAPI.getBattle(tb);
-        if (battle == null) {
-            PLUGIN.getLogger().warning("The flag placed by " + e.getCellUnderAttack().getNameOfFlagOwner() + " is flagging during a null battle!");
-            return;
-        }
-
-        if (battle.getContestedTown().isHomeBlock(tb)) {
+        if (BATTLE_MANAGER.registerAttackWon(c)) {
             e.setCancelled(true);
-            battle.loseDefense();
         }
-        else battle.removeFlag(c.getNameOfFlagOwner());
     }
 
     @EventHandler
     public void onFlagAttackLost(CellDefendedEvent e) {
         var c = e.getCell();
-        TownBlock tb = TownyAPI.getInstance().getTownBlock(new WorldCoord(c.getWorldName(), c.getX(), c.getZ()));
-
-        Battle battle = BannerWarAPI.getBattle(tb);
-        if (battle == null) {
-            PLUGIN.getLogger().warning("The flag" + c.getX() + "-" + c.getZ() + " is flagging during a null battle!");
-            return;
-        }
-
-        battle.removeFlag(c.getAttackData().getNameOfFlagOwner());
+        BATTLE_MANAGER.registerAttackLost(c);
     }
 
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = false)
@@ -264,7 +253,12 @@ public class BattleListener implements Listener {
 
                         ItemStack held = e.getPlayer().getInventory().getItemInMainHand();
 
-                        if (held.getType() == Material.GOLD_INGOT) {
+                        Material required = BannerWarConfig.getFlagLifePaymentItem();
+
+                        // how much the next life costs, hence + 1.
+                        int price = BannerWarConfig.getFlagLifePrice(cell.getLifeAdditions() + 1);
+
+                        if (held.getType() == required && held.getAmount() >= price) {
 
                             if (cell.tryAddLife())
                                 Broadcasts.sendMessage(e.getPlayer(), ChatColor.GREEN + "You have added a life!");
@@ -273,7 +267,7 @@ public class BattleListener implements Listener {
                                 return;
                             }
 
-                            held.setAmount(held.getAmount() - 1); // TODO: MAKE CONFIGURABLE
+                            held.setAmount(held.getAmount() - price);
                             e.getPlayer().getInventory().setItemInMainHand(held);
                         }
                     }

@@ -92,7 +92,6 @@ public final class BattleUtil {
         return b.getDuration(BattleStage.PRE_FLAG).plus(b.getDuration(BattleStage.FLAG));
     }
 
-
     /**
      * Returns a {@link Collection} of {@link ChunkSnapshot}s of the provided {@link Chunk}s
      * @param chunks the {@link Collection} of {@link Chunk}s

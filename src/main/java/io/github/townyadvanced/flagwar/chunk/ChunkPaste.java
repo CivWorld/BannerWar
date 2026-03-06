@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 
 /** A class designed to paste chunks' {@link Material}s and {@link BlockData} in batches,
  * working in tandem with {@link ChunkCopy} to achieve chunk persistence. **/
-public class ChunkPaste {
+public final class ChunkPaste {
 
     /** Holds the instance of this class. */
     private static ChunkPaste instance;
@@ -135,7 +135,7 @@ public class ChunkPaste {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (int n = 0; n < 5; n++) { // TODO: MAKE CONFIGURABLE
+                for (int n = 0; n < 5; n++) {
 
                     PersistentChunk pc;
 

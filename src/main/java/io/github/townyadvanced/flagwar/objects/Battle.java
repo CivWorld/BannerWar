@@ -5,13 +5,14 @@ import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.utils.TownRuinUtil;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.BattleManager;
+import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.chunk.ChunkCopy;
 import io.github.townyadvanced.flagwar.chunk.ChunkPaste;
 import io.github.townyadvanced.flagwar.events.BattleEndEvent;
 import io.github.townyadvanced.flagwar.events.BattleFlaggableEvent;
 import io.github.townyadvanced.flagwar.events.BattleRuinEvent;
+import io.github.townyadvanced.flagwar.managers.WaypointManager;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -233,12 +234,12 @@ public class Battle {
 
     /**
      * Advances the stage of this battle to the next one.
-     * @param win whether the battle is to be won by the {@link #DEFENDER} if the next stage ends it.
+     * @param winDefense whether the battle is to be won by the {@link #DEFENDER} if the next stage ends it.
      */
-    public void advanceStage(boolean win) {
+    public void advanceStage(boolean winDefense) {
         switch (stage) {
             case PRE_FLAG -> makeFlaggable();
-            case FLAG -> { if (win) winDefense(); else loseDefense(); }
+            case FLAG -> { if (winDefense) winDefense(); else loseDefense(); }
             case RUINED -> unRuin();
             case DORMANT -> BattleManager.removeBattle(this);
         }
@@ -416,6 +417,7 @@ public class Battle {
         return flags;
     }
 
+    /** Returns whether the {@link #stage} of this battle is equal to the {@link BattleStage#FLAG} stage.*/
     public boolean isFlagging() {
         return getCurrentStage() == BattleStage.FLAG;
     }

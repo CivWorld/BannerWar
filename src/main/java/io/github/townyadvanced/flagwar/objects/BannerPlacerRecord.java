@@ -9,7 +9,7 @@ public record BannerPlacerRecord(
 )
 {
     /**
-     * Returns a {@link BannerPlacerRecord} with this town and the current towny day, by calling {@link BannerWarConfig#getCurrentTownyDay()}.
+     * Returns a {@link BannerPlacerRecord} with this town and the current towny day, by calling {@link BannerWarConfig#getCountExtraFlagLives()}.
      * @param town the town in question
      */
     public static BannerPlacerRecord of(Town town) {
