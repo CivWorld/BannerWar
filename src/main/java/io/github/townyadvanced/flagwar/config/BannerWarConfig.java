@@ -92,7 +92,7 @@ public class BannerWarConfig {
 
     public static int getFlagLifePrice(int n) {
         int base = PLUGIN.getConfig().getInt("flag_lives.base_price");
-        return base * (2 ^ n);
+        return (int) (base * Math.round(Math.pow(2, n)));
     }
 
     /**
