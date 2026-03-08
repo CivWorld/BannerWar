@@ -50,10 +50,11 @@ public final class DatabaseInteraction {
                             rs.getBoolean(7),
                             BattleStage.valueOf(rs.getString(8)),
                             UUID.fromString(rs.getString(9)),
-                            BattleUtil.toBlockList(rs.getString(9), rs.getString(10)),
+                            BattleUtil.toWorldCoords(rs.getString(9), rs.getString(10)),
                             UUID.fromString(rs.getString(11))
                         ));
                     }
+                    System.out.println(battles);
                     return battles;
                 }
             } catch (SQLException e) {
@@ -78,7 +79,7 @@ public final class DatabaseInteraction {
                 ps.setBoolean(7, r.isCityState());
                 ps.setString(8, r.stage().name());
                 ps.setString(9, r.worldID().toString());
-                ps.setString(10, BattleUtil.fromBlockList(r.townBlocks()));
+                ps.setString(10, BattleUtil.fromWorldCoords(r.townBlocksCoords()));
                 ps.setString(11, r.initialMayorID().toString());
 
                 if (ps.executeUpdate() > 0)
@@ -106,7 +107,7 @@ public final class DatabaseInteraction {
                 ps.setBoolean(7, r.isCityState());
                 ps.setString(8, r.stage().name());
                 ps.setString(9, r.worldID().toString());
-                ps.setString(10, BattleUtil.fromBlockList(r.townBlocks()));
+                ps.setString(10, BattleUtil.fromWorldCoords(r.townBlocksCoords()));
                 ps.setString(11, r.initialMayorID().toString());
 
                 if (ps.executeUpdate() <= 0)

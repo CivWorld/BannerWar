@@ -24,7 +24,9 @@ import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.util.Broadcasts;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -74,20 +76,22 @@ public class FlagWarBlockListener implements Listener {
         Resident r = TownyAPI.getInstance().getResident(townyBuildEvent.getPlayer());
 
         if (townBlock != null && townBlock.hasTown()) {
+
             Town town = townBlock.getTownOrNull();
+
             if (!townBlock.getWorld().isWarAllowed()
                 || (town == null || !town.isAllowedToWar())
                 || !FlagWarConfig.isAllowingAttacks()
                 ||  town.getNationOrNull() == null
                 || (r == null || r.getTownOrNull() == null || r.getTownOrNull().getNationOrNull() == null)
-                || !townyBuildEvent.getMaterial().equals(FlagWarConfig.getFlagBaseMaterial())) {
+                || !Tag.FENCES.isTagged(townyBuildEvent.getMaterial())) {
                 return;
             }
 
             var player = townyBuildEvent.getPlayer();
             Nation defender = town.getNationOrNull();
 
-            Battle battle = BannerWarAPI.getBattle(townBlock);
+            Battle battle = BannerWarAPI.getBattleAt(townBlock);
             if (BannerWarAPI.isAssociatedWithNation(r, defender)
                 && (battle == null || !battle.getCapturedTownBlocks().contains(townBlock))) return;
 

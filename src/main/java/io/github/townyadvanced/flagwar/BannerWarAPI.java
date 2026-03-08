@@ -8,13 +8,9 @@ import com.palmergames.bukkit.towny.object.TownBlock;
 import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
-import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 import town.sheepy.townyAI.TownyAI;
-import town.sheepy.townyAI.api.TownyAIAPI;
-import town.sheepy.townyAI.api.TownyAIAPIImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,10 +57,17 @@ public final class BannerWarAPI {
      * Returns the {@link Battle} object that contains this {@link TownBlock} as an initial town block.
      * @param townBlock the specified {@link TownBlock}
      */
-    public static Battle getBattle(TownBlock townBlock) {
-        for (Battle b : BattleManager.getActiveBattles())
-                if (b.getInitialTownBlocks().contains(townBlock))
-                    return b;
+    public static Battle getBattleAt(TownBlock townBlock) {
+
+        if (townBlock == null) return null;
+
+        for (Battle b : BattleManager.getActiveBattles()) {
+            for (TownBlock other : b.getInitialTownBlocks()) {
+                int x = other.getX();
+                int z = other.getZ();
+                if (x == townBlock.getX() && z == townBlock.getZ()) return b;
+            }
+        }
 
         return null;
     }
@@ -162,7 +165,7 @@ public final class BannerWarAPI {
      */
     public static Collection<Player> getNonAssociatedPlayers(Battle battle) {
 
-        var out = (Collection<Player>) Bukkit.getOnlinePlayers();
+        ArrayList<Player> out = new ArrayList<>(Bukkit.getOnlinePlayers());
         out.removeAll(getAssociatedPlayers(battle));
 
         return out;
@@ -177,9 +180,9 @@ public final class BannerWarAPI {
      */
     public static CompletableFuture<Collection<Player>> getAssociatedNonBots(Battle battle) {
 
-        Collection<Player> out = getAssociatedPlayers(battle);
 
         return CompletableFuture.supplyAsync(() -> {
+        Collection<Player> out = getAssociatedPlayers(battle);
             getAllBots().thenAccept(out::removeAll);
             return out;
         });
@@ -194,9 +197,9 @@ public final class BannerWarAPI {
      */
     public static CompletableFuture<Collection<Player>> getNonAssociatedNonBots(Battle battle) {
 
-        Collection<Player> out = getNonAssociatedPlayers(battle);
-
         return CompletableFuture.supplyAsync(() -> {
+            Collection<Player> out = getNonAssociatedPlayers(battle);
+
             getAllBots().thenAccept(out::removeAll);
             return out;
         });
@@ -207,8 +210,10 @@ public final class BannerWarAPI {
      */
     public static CompletableFuture<Collection<Player>> getAllBots() {
 
-        if (Bukkit.getServer().getPluginManager().getPlugin("TownyAI") == null) {
-            JavaPlugin.getProvidingPlugin(FlagWar.class).getLogger().warning("Plugin 'TownyAI' does not exist! Returning empty collection!");
+        if (Bukkit.getServer().getPluginManager().getPlugin("townyAI") == null) {
+            // JavaPlugin.getProvidingPlugin(FlagWar.class).getLogger().warning("Plugin 'townyAI' does not exist! Returning empty collection!");
+
+
             return CompletableFuture.completedFuture(new ArrayList<>());
         }
 

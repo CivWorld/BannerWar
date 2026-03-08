@@ -3,6 +3,7 @@ package io.github.townyadvanced.flagwar.listeners;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.NewDayEvent;
+import com.palmergames.bukkit.towny.event.town.TownKickEvent;
 import com.palmergames.bukkit.towny.event.town.TownLeaveEvent;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
@@ -39,7 +40,7 @@ public class WearinessListener implements Listener {
 
     @EventHandler
     public void onCellAttack(CellAttackEvent e) {
-        Battle battle = BannerWarAPI.getBattle(TownyAPI.getInstance().getTownBlock(e.getFlagBlock().getLocation()));
+        Battle battle = BannerWarAPI.getBattleAt(TownyAPI.getInstance().getTownBlock(e.getFlagBlock().getLocation()));
         if (battle == null) {
             PLUGIN.getLogger().warning("The flag placed by " + e.getData().getNameOfFlagOwner() + " is flagging during a null battle!");
             return;
@@ -47,7 +48,9 @@ public class WearinessListener implements Listener {
 
         Resident r = TownyAPI.getInstance().getResident(e.getPlayer());
 
-        CivicsUtil.increaseWeariness(r, BannerWarConfig.getFlagPlaceAttackerIncrease());
+        double wearinessIncrease = BannerWarConfig.getFlagPlaceAttackerIncrease();
+
+        CivicsUtil.increaseWeariness(r, wearinessIncrease);
 
     }
 
@@ -56,7 +59,7 @@ public class WearinessListener implements Listener {
 
         WorldCoord coord = new WorldCoord(e.getPlayer().getWorld(), e.getCell().getX(), e.getCell().getZ());
 
-        Battle battle = BannerWarAPI.getBattle(TownyAPI.getInstance().getTownBlock(coord));
+        Battle battle = BannerWarAPI.getBattleAt(TownyAPI.getInstance().getTownBlock(coord));
         if (battle == null) {
             PLUGIN.getLogger().warning("The flag defended by " + e.getPlayer().getName() + " is during a null battle!");
             return;
@@ -67,7 +70,7 @@ public class WearinessListener implements Listener {
         CivicsUtil.increaseWeariness(r, BannerWarConfig.getFlagDefendAttackerWeariness());
 
 
-        int weariness = BannerWarConfig.getFlagDefendDefenderWeariness();
+        double weariness = BannerWarConfig.getFlagDefendDefenderWeariness();
 
         // we don't want to risk using decreaseWeariness(initialMayor) because what if the mayor
         // left for any reason?
@@ -82,7 +85,7 @@ public class WearinessListener implements Listener {
     @EventHandler
     public void onCellWon(CellWonEvent e) {
 
-        Battle battle = BannerWarAPI.getBattle(TownyAPI.getInstance().getTownBlock(
+        Battle battle = BannerWarAPI.getBattleAt(TownyAPI.getInstance().getTownBlock(
             e.getCellUnderAttack().getFlagBaseBlock().getLocation())
         );
 
@@ -108,17 +111,16 @@ public class WearinessListener implements Listener {
 
         if (e.isDefenseWon()) {
 
-            int attackerIncrease = BannerWarConfig.getDefenseWonAttackerIncrease(CivicsUtil.isAutocracy(att));
-            int defenderDecrease = BannerWarConfig.getDefenseWonDefenderDecrease(CivicsUtil.isAutocracy(def));
+            double attackerIncrease = BannerWarConfig.getDefenseWonAttackerIncrease(CivicsUtil.isAutocracy(att));
+            double defenderDecrease = BannerWarConfig.getDefenseWonDefenderDecrease(CivicsUtil.isAutocracy(def));
 
             CivicsUtil.increaseWeariness(att, attackerIncrease);
             CivicsUtil.decreaseWeariness(def, defenderDecrease);
         }
         else {
 
-            int attackerDecrease = BannerWarConfig.getDefenseLostAttackerDecrease(CivicsUtil.isAutocracy(att));
-            int defenderIncrease = BannerWarConfig.getDefenseLostDefenderIncrease(CivicsUtil.isAutocracy(def));
-
+            double attackerDecrease = BannerWarConfig.getDefenseLostAttackerDecrease(CivicsUtil.isAutocracy(att));
+            double defenderIncrease = BannerWarConfig.getDefenseLostDefenderIncrease(CivicsUtil.isAutocracy(def));
 
             CivicsUtil.decreaseWeariness(att, attackerDecrease);
             CivicsUtil.increaseWeariness(def, defenderIncrease);
@@ -130,18 +132,35 @@ public class WearinessListener implements Listener {
 
         Town t = e.getTown();
         Nation n = t.getNationOrNull();
-        int threshold = BannerWarConfig.getTownLeaveWearinessThreshold();
+        double threshold = BannerWarConfig.getTownLeaveWearinessThreshold();
 
         if (CivicsUtil.isFederation(n)) {
             if (CivicsUtil.getWearinessAsPercentage(t) >= threshold) {
-                e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its war weariness exceeds 15!"));
+                e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its war weariness exceeds " + threshold + "!"));
                 e.setCancelled(true);
             }
         }
         else if (CivicsUtil.getWearinessAsPercentage(n) >= threshold) {
-            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its nation's war weariness exceeds 15!"));
+            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its nation's war weariness exceeds  " + threshold + "!"));
             e.setCancelled(true);
+        }
+    }
 
+    @EventHandler
+    public void onTownKick(TownKickEvent e) {
+        Town t = e.getTown();
+        Nation n = t.getNationOrNull();
+        double threshold = BannerWarConfig.getTownLeaveWearinessThreshold();
+
+        if (CivicsUtil.isFederation(n)) {
+            if (CivicsUtil.getWearinessAsPercentage(t) >= threshold) {
+                e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot kick " + e.getKickedResident().getName() + " because your town's war weariness exceeds " + threshold + "!"));
+                e.setCancelled(true);
+            }
+        }
+        else if (CivicsUtil.getWearinessAsPercentage(n) >= threshold) {
+            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot kick " + e.getKickedResident().getName() + " because your nation's war weariness exceeds " + threshold + "!"));
+            e.setCancelled(true);
         }
     }
 
@@ -150,8 +169,8 @@ public class WearinessListener implements Listener {
     public void onNewTownyDay(NewDayEvent e) {
 
         BannerWarConfig.incrementTownyDay();
-        int guaranteedDecrease = BannerWarConfig.getNewDayWearinessDecrease();
-        int expiredDecrease = BannerWarConfig.getNewDayExpiredDecrease();
+        double guaranteedDecrease = BannerWarConfig.getNewDayWearinessDecrease();
+        double expiredDecrease = BannerWarConfig.getNewDayExpiredDecrease();
 
         // guaranteed weariness decrease.
         Collection<Nation> allNations = TownyUniverse.getInstance().getNations();

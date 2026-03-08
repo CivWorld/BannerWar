@@ -27,6 +27,8 @@ public final class CivicsUtil {
     /** Holds the ID of the name of the war weariness upkeep modifier. */
     public static final String WEARINESS = "War Weariness";
 
+    public static final String FORMATTED_WEARINESS = "War Weariness (%d%%)";
+
     /** Holds the base price that all modifier percentages will be multiplied with. */
     public static final double BASE = 10;
 
@@ -167,13 +169,28 @@ public final class CivicsUtil {
 
     public static double getWeariness(Town town) {
         if (town == null) return 0.0;
-        return api.getUpkeepModifiers(town).getOrDefault(WEARINESS, 0.0);
+
+        for (var set : api.getUpkeepModifiers(town).entrySet()) {
+            String name  = set.getKey();
+            double value = set.getValue();
+
+            if (name.contains(WEARINESS)) return value;
+        }
+
+        return 0.0;
     }
 
     public static double getWeariness(Nation nation) {
         if (nation == null) return 0.0;
-        return api.getNationUpkeepModifier(nation, WEARINESS);
-    }
+
+        for (var set : api.getNationUpkeepModifiers(nation).entrySet()) {
+            String name  = set.getKey();
+            double value = set.getValue();
+
+            if (name.contains(WEARINESS)) return value;
+        }
+
+        return 0.0;    }
 
     public static double getWearinessAsPercentage(Town town) {
         return getWeariness(town)/BASE;
@@ -191,9 +208,14 @@ public final class CivicsUtil {
             return;
         }
 
-        double initial = getWeariness(town);
-        api.removeUpkeepModifier(town, WEARINESS);
-        api.addUpkeepModifier(town, WEARINESS, Math.max(initial + h, 0));
+        double initialValue = getWeariness(town);
+        double finalValue = Math.max(initialValue + h, 0);
+
+        String oldName = String.format(FORMATTED_WEARINESS, Math.round(toPercentage(initialValue)));
+        String newName = String.format(FORMATTED_WEARINESS, Math.round(toPercentage(finalValue)));
+
+        api.removeUpkeepModifier(town, oldName);
+        api.addUpkeepModifier(town, newName, finalValue);
     }
 
     private static void changeNationWeariness(Nation nation, double d) {
@@ -204,8 +226,17 @@ public final class CivicsUtil {
             return;
         }
 
-        double initial = getWeariness(nation);
-        api.removeNationUpkeepModifier(nation, WEARINESS);
-        api.addNationUpkeepModifier(nation, WEARINESS, Math.max(initial + h, 0));
+        double initialValue = getWeariness(nation);
+        double finalValue = Math.max(initialValue + h, 0);
+
+        String oldName = String.format(FORMATTED_WEARINESS, Math.round(toPercentage(initialValue)));
+        String newName = String.format(FORMATTED_WEARINESS, Math.round(toPercentage(finalValue)));
+
+        api.removeNationUpkeepModifier(nation, oldName);
+        api.addNationUpkeepModifier(nation, newName, finalValue);
+    }
+
+    private static double toPercentage(double d) {
+        return d/BASE;
     }
 }

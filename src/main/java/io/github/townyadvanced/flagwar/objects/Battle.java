@@ -12,7 +12,6 @@ import io.github.townyadvanced.flagwar.chunk.ChunkPaste;
 import io.github.townyadvanced.flagwar.events.BattleEndEvent;
 import io.github.townyadvanced.flagwar.events.BattleFlaggableEvent;
 import io.github.townyadvanced.flagwar.events.BattleRuinEvent;
-import io.github.townyadvanced.flagwar.managers.WaypointManager;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -38,8 +37,8 @@ public class Battle {
     /** Holds a {@link List} of {@link String}s of every player that has placed a {@link CellUnderAttack} relevant to this battle. */
     private final List<String> flags;
 
-    /** Holds the critical {@link TownBlock} that, when won, ends the battle. */
-    private final TownBlock HOME_BLOCK;
+    /** Holds the {@link WorldCoord} of the critical {@link TownBlock} that, when won, ends the battle. */
+    private final WorldCoord HOME_BLOCK_COORDS;
 
     /** Holds the {@link Duration} of every stage of this war. */
     private Map<BattleStage, Duration> STAGE_DURATIONS = new EnumMap<>(BattleStage.class);
@@ -47,8 +46,8 @@ public class Battle {
     /** Holds the {@link BattleStage} of this battle. */
     private BattleStage stage;
 
-    /** Holds a {@link Collection} {@link TownBlock}s that belong to the town before the battle, for restoration. */
-    private final Collection<TownBlock> INITIAL_TOWN_BLOCKS;
+    /** Holds a {@link Collection} of the {@link WorldCoord}s of all{@link TownBlock}s that belong to the town before the battle, for restoration. */
+    private final Collection<WorldCoord> INITIAL_TOWN_BLOCK_COORDS;
 
     /** Holds the {@link Resident} who was mayor of the {@link #CONTESTED_TOWN} at the time of the attack. */
     private final Resident INITIAL_MAYOR;
@@ -68,22 +67,22 @@ public class Battle {
      * @param defender the defending nation
      * @param contestedTown the town at which the battle is held
      * @param stm the system time in milliseconds (Unix Epoch) at which the battle started
-     * @param preWarBlocks the {@link List} of {@link TownBlock}s that belonged to the town before the battle
+     * @param preWarBlocks the {@link List} of the {@link WorldCoord} of every {@link TownBlock} that belonged to the town before the battle
      * @param homeBlock the homeblock of the contested town
      * @param isCityState whether this battle's town is a City State or not
      * @param stage the {@link BattleStage} of the battle
      * @param initialMayor the {@link Resident} who was mayor of the {@link #CONTESTED_TOWN} at the time of the attack
      */
-    private Battle(Nation attacker, Nation defender, Town contestedTown, Collection<TownBlock> preWarBlocks, long stm, TownBlock homeBlock, boolean isCityState, BattleStage stage, Resident initialMayor) {
+    private Battle(Nation attacker, Nation defender, Town contestedTown, Collection<WorldCoord> preWarBlocks, long stm, TownBlock homeBlock, boolean isCityState, BattleStage stage, Resident initialMayor) {
         this.ATTACKER = attacker;
         this.DEFENDER = defender;
         this.CONTESTED_TOWN = contestedTown;
         this.flags = new ArrayList<>(); // every flag is lost after a resume.
-        this.INITIAL_TOWN_BLOCKS = preWarBlocks;
+        this.INITIAL_TOWN_BLOCK_COORDS = preWarBlocks;
         this.stageStartTimeMillis = stm;
         this.isCityState = isCityState;
         this.stage = stage;
-        this.HOME_BLOCK = homeBlock;
+        this.HOME_BLOCK_COORDS = homeBlock.getWorldCoord();
         this.INITIAL_MAYOR = initialMayor;
         STAGE_DURATIONS = BattleUtil.computeStageTimes(this);
 
@@ -91,7 +90,6 @@ public class Battle {
 
         var chunks = BattleUtil.toChunks(contestedTown.getTownBlocks(), contestedTown.getWorld());
         ChunkCopy.getInstance().copy(BattleUtil.toChunkSnapshot(chunks));
-
     }
 
     /**
@@ -106,7 +104,7 @@ public class Battle {
         this(attacker,
             defender,
             contestedTown,
-            new ArrayList<>(contestedTown.getTownBlocks()),
+            BattleUtil.toWorldCoords(contestedTown.getTownBlocks()),
             System.currentTimeMillis(),
             contestedTown.getHomeBlockOrNull(),
             isCityState,
@@ -124,7 +122,7 @@ public class Battle {
         this(!br.attacker().equals("_") ? TownyAPI.getInstance().getNation(br.attacker()) : null,
             !br.defender().equals("_") ? TownyAPI.getInstance().getNation(br.defender()) : null,
             TownyAPI.getInstance().getTown(br.contestedTown()),
-            br.townBlocks(),
+            br.townBlocksCoords(),
             br.stageStartTime(),
             TownyAPI.getInstance().getTownBlock(
             new WorldCoord(Bukkit.getWorld(br.worldID()), br.homeX(), br.homeZ())),
@@ -146,7 +144,7 @@ public class Battle {
 
     /** Returns the home block of the town where the battle is held. */
     public TownBlock getHomeBlock() {
-        return HOME_BLOCK;
+        return TownyAPI.getInstance().getTownBlock(HOME_BLOCK_COORDS);
     }
 
     /** Returns the town where the battle is held. */
@@ -169,7 +167,19 @@ public class Battle {
 
     /** Returns the {@link Collection} of {@link TownBlock}s that belonged to this {@link #CONTESTED_TOWN} before the battle. */
     public Collection<TownBlock> getInitialTownBlocks() {
-        return INITIAL_TOWN_BLOCKS;
+
+        // town blocks are not reliable; for some reason some player actions mutate them such that they are no longer
+        // equal to the initial town blocks, messing up battle lookups
+
+        // the only thing that remains constant is their WorldCoord, because god knows.
+
+        Collection<TownBlock> out = new ArrayList<>();
+
+        for (var WC : INITIAL_TOWN_BLOCK_COORDS) {
+            out.add(TownyAPI.getInstance().getTownBlock(WC));
+        }
+
+        return out;
     }
 
     /** Returns the {@link Collection} of {@link TownBlock}s that have been captured by the {@link #ATTACKER} during the battle. */
@@ -280,13 +290,17 @@ public class Battle {
 
     /**
      * Deletes the {@link Battle#bossBar} and sets the {@link Battle#stage} to {@link BattleStage#DORMANT}.
+     * This effectively ends the battle and begins the battle cooldown.
      */
     private void makeDormant() {
         setStage(BattleStage.DORMANT);
         deleteBossBar();
 
         ChunkPaste.getInstance()
-            .paste(BattleUtil.toChunks(getInitialTownBlocks(), getContestedTown().getWorld()), getContestedTown().getWorld());
+            .paste(BattleUtil.toChunks(
+                getInitialTownBlocks(),
+                getContestedTown().getWorld()),
+                getContestedTown().getWorld());
     }
 
     /** Puts the {@link #CONTESTED_TOWN} into a ruined state. */
@@ -413,7 +427,7 @@ public class Battle {
      * Gets every flag's flag owner associated with this {@link Battle},
      * where the {@link CellUnderAttack} can be looked up using {@link FlagWar#getCellsUnderAttackByPlayer(String)}.
      */
-    public Collection<String> getCellsUnderAttack() {
+    public Collection<String> getFlagOwners() {
         return flags;
     }
 

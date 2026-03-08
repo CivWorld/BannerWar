@@ -1,6 +1,8 @@
 package io.github.townyadvanced.flagwar.objects;
 
 import com.palmergames.bukkit.towny.object.TownBlock;
+import com.palmergames.bukkit.towny.object.WorldCoord;
+import io.github.townyadvanced.flagwar.util.BattleUtil;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -16,7 +18,7 @@ import java.util.UUID;
  * @param isCityState whether the town this battle is hosted in is a CityState
  * @param stage the {@link BattleStage} that this battle is currently on
  * @param worldID the {@link UUID} of the world that this battle is hosted in
- * @param townBlocks the {@link Collection} of {@link TownBlock}s that the contested town accommodated before the battle began
+ * @param townBlocksCoords the {@link Collection} of the {@link WorldCoord} of all {@link TownBlock}s that the contested town accommodated before the battle began
  * @param initialMayorID the {@link UUID} of the resident who was mayor before the battle began
  */
 public record BattleRecord (
@@ -29,7 +31,7 @@ public record BattleRecord (
     boolean isCityState,
     BattleStage stage,
     UUID worldID,
-    Collection<TownBlock> townBlocks,
+    Collection<WorldCoord> townBlocksCoords,
     UUID initialMayorID
 )
 {
@@ -44,7 +46,7 @@ public record BattleRecord (
             b.isCityState(),
             b.getCurrentStage(),
             b.getContestedTown().getWorld().getUID(),
-            b.getInitialTownBlocks(),
+            BattleUtil.toWorldCoords(b.getInitialTownBlocks()),
             b.getInitialMayor().getUUID()
         );
     }

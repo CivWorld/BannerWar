@@ -35,7 +35,3 @@ commands:
             - PhaseAdvance
             - pa
             - sa
-
-    getBattles:
-        aliases:
-            - gb

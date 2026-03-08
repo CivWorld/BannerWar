@@ -59,6 +59,9 @@ public final class Broadcasts {
 
     /**
      * Sends an error message to the specified {@link Player}, formatted for BannerWar.
+     * <p>
+     * This message's purpose is to let a player know that an action has failed or been blocked by the server, such
+     * as flagging a town that is not under a battle, or starting a battle on a peaceful nation.
      * @param p the specified {@link Player}
      * @param msg the message
      */

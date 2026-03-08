@@ -22,18 +22,18 @@ public final class BattleUtil {
     private static final String DELIMITER = ":";
 
     /** Holds the delimiter used for splitting {@link String}s that hold chunk coordinates. */
-    private static final String CHUNK_DELIMITER = "-";
+    private static final String CHUNK_DELIMITER = "_";
 
     /**
-     * Returns a {@link Collection} of {@link TownBlock}s from a {@link String} representation.
+     * Returns a {@link Collection} of {@link WorldCoord}s from a {@link String} representation.
      * @param worldID the {@link UUID} of the world where the town blocks reside
      * @param listToSplit the {@link String} that will be split into a list.
      */
-    public static Collection<TownBlock> toBlockList(String worldID, String listToSplit) {
+    public static Collection<WorldCoord> toWorldCoords(String worldID, String listToSplit) {
         World world = Bukkit.getServer().getWorld(UUID.fromString(worldID));
         if (world == null) return new ArrayList<>();
 
-        List<TownBlock> blocks = new ArrayList<>();
+        List<WorldCoord> out = new ArrayList<>();
         String[] chunks = listToSplit.split(DELIMITER);
 
         for (String chunk : chunks) {
@@ -42,22 +42,20 @@ public final class BattleUtil {
             int z = Integer.parseInt(block[1]);
 
 
-            blocks.add(TownyAPI.getInstance().getTownBlock(
-                new WorldCoord(world, x, z)
-            ));
+            out.add(new WorldCoord(world, x, z));
         }
-        return blocks;
+        return out;
     }
 
     /**
      * Returns a {@link String} representation of a {@link Collection} of {@link TownBlock}s
-     * @param blocks the {@link Collection} of {@link TownBlock}s
+     * @param coords the {@link Collection} of {@link WorldCoord}s
      */
-    public static String fromBlockList(Collection<TownBlock> blocks) {
+    public static String fromWorldCoords(Collection<WorldCoord> coords) {
 
         Collection<String> chunks = new ArrayList<>();
-        for (TownBlock block : blocks)
-            chunks.add(block.getX() + CHUNK_DELIMITER + block.getZ());
+        for (WorldCoord coord : coords)
+            chunks.add(coord.getX() + CHUNK_DELIMITER + coord.getZ());
 
         return String.join(DELIMITER, chunks);
 
@@ -123,5 +121,15 @@ public final class BattleUtil {
      */
     public static long daysSince(long day) {
         return BannerWarConfig.getCurrentTownyDay() - day;
+    }
+
+    /**
+     * Returns the {@link WorldCoord} of every {@link TownBlock} in the {@link Collection} provided.
+     * @param townBlocks the {@link Collection} of {@link TownBlock}s provided.
+     */
+    public static Collection<WorldCoord> toWorldCoords(Collection<TownBlock> townBlocks) {
+        Collection<WorldCoord> out = new ArrayList<>();
+        for (TownBlock tb : townBlocks) out.add(tb.getWorldCoord());
+        return out;
     }
 }

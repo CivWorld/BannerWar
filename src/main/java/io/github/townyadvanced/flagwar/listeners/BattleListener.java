@@ -75,7 +75,7 @@ public class BattleListener implements Listener {
 
         if (BannerWarAPI.isAssociatedWithNation(r, defender)) return;
 
-        Battle battle = BannerWarAPI.getBattle(townBlock);
+        Battle battle = BannerWarAPI.getBattleAt(townBlock);
 
         if (!townBlock.getWorld().isWarAllowed()) {
             Broadcasts.sendErrorMessage(event.getPlayer(), "The world is not allowed to war!");
@@ -100,6 +100,11 @@ public class BattleListener implements Listener {
 
         if (defender != null && defender.isNeutral()) {
             Broadcasts.sendErrorMessage(event.getPlayer(), "You cannot attack a peaceful nation!");
+            return;
+        }
+
+        if (attacker != null && attacker.isNeutral()) {
+            Broadcasts.sendErrorMessage(event.getPlayer(), "You cannot attack as a peaceful nation!");
             return;
         }
 
@@ -177,7 +182,8 @@ public class BattleListener implements Listener {
     public void onFlaggable(BattleFlaggableEvent event) {
         Battle battle = event.getBattle();
         Broadcasts.broadcastMessage(
-            "The battle at " + battle.getContestedTown().getName() + " has begun its " + ChatColor.AQUA + "FLAG" + ChatColor.RESET + " state. Flags may now be placed!");
+            "The battle at " + battle.getContestedTown().getName()
+                + " has begun its " + ChatColor.AQUA + "FLAG" + ChatColor.RESET + " state. Flags may now be placed!");
     }
 
     @EventHandler
@@ -205,7 +211,7 @@ public class BattleListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFlagStart(CellAttackEvent e) {
 
         var c = e.getData();
@@ -216,7 +222,7 @@ public class BattleListener implements Listener {
 
     }
 
-    @EventHandler
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFlagAttackWon(CellWonEvent e) {
         var c = e.getCellUnderAttack();
 
@@ -225,7 +231,7 @@ public class BattleListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFlagAttackLost(CellDefendedEvent e) {
         var c = e.getCell();
         BATTLE_MANAGER.registerAttackLost(c);
@@ -240,7 +246,7 @@ public class BattleListener implements Listener {
         if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getHand() == EquipmentSlot.HAND && b != null) {
 
             TownBlock tb = TownyAPI.getInstance().getTownBlock(b.getLocation());
-            Battle battle = BannerWarAPI.getBattle(tb);
+            Battle battle = BannerWarAPI.getBattleAt(tb);
 
             if (adder != null && tb != null && battle != null) {
                 CellUnderAttack cell = battle.getCellUnderAttack(tb.getX(), tb.getZ());

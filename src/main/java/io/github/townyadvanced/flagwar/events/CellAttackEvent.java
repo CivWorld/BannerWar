@@ -75,7 +75,7 @@ public class CellAttackEvent extends Event implements Cancellable {
         this.player = attacker;
         this.flagBlock = flagBaseBlock;
         TownBlock block = TownyAPI.getInstance().getTownBlock(flagBaseBlock.getLocation());
-        if (block != null) battle = BannerWarAPI.getBattle(block);
+        if (block != null) battle = BannerWarAPI.getBattleAt(block);
 
         setPhaseDuration(FlagWarConfig.getFlagPhasesDuration());
 

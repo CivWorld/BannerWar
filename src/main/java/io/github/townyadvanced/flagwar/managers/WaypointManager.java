@@ -10,7 +10,6 @@ import town.sheepy.wayfinderAPI.WaypointService;
 import town.sheepy.wayfinderAPI.model.WaypointStyle;
 
 import java.util.Collection;
-import java.util.UUID;
 import java.util.logging.Logger;
 
 public final class WaypointManager {
@@ -22,36 +21,42 @@ public final class WaypointManager {
     private final Logger LOGGER;
 
     /** Holds the {@link WaypointService} instance. */
-    private final WaypointService SERVICE;
+    private WaypointService SERVICE;
 
     public WaypointManager(JavaPlugin plugin) {
 
         this.PLUGIN = plugin;
         LOGGER = plugin.getLogger();
 
+        Bukkit.getScheduler().runTaskLater(PLUGIN, this::assignAPI, 1);
+    }
+
+    private void assignAPI() {
         this.SERVICE = Bukkit.getServer().getPluginManager().getPlugin("WayfinderAPI") != null ?
             JavaPlugin.getPlugin(WayfinderAPI.class).getWaypointService() :
             null;
+
     }
 
     public void createWaypoint(CellUnderAttack c) {
-        if (!isAPIAvailable()) return;
+        if (isAPIUnavailable()) return;
 
         SERVICE.createWaypoint(
             toKey(c.getNameOfFlagOwner()),
             c.getFlagBaseBlock().getLocation(),
             Color.RED,
             WaypointStyle.FLAG,
-            100); // hardcoded values for now.
+            1000); // hardcoded for now.
     }
 
     public void deleteWaypoint(String flagOwner) {
-        if (!isAPIAvailable()) return;
+        if (isAPIUnavailable()) return;
         SERVICE.deleteWaypoint(toKey(flagOwner));
     }
 
     public void addPlayersToWaypoint(Collection<Player> players, String flagOwner) {
-        if (!isAPIAvailable()) return;
+
+        if (isAPIUnavailable()) return;
         String ID = toKey(flagOwner);
 
         for (Player p : players)
@@ -60,7 +65,8 @@ public final class WaypointManager {
     }
 
     public void removePlayersFromWaypoint(Collection<Player> players, String flagOwner) {
-        if (!isAPIAvailable()) return;
+
+        if (isAPIUnavailable()) return;
         String ID = toKey(flagOwner);
 
         for (Player p : players)
@@ -68,14 +74,14 @@ public final class WaypointManager {
     }
 
     private String toKey(String flagOwner) {
-        return "WAR_" + flagOwner + "_" + UUID.randomUUID();
+        return "BATTLE_" + flagOwner;
     }
 
-    private boolean isAPIAvailable() {
+    private boolean isAPIUnavailable() {
         if (SERVICE == null) {
             LOGGER.warning("WaypointService is not available; cannot assign waypoints to players!");
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 }

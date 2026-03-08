@@ -37,7 +37,6 @@ import com.palmergames.bukkit.util.Version;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
-import io.github.townyadvanced.flagwar.command.todelete;
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
@@ -142,7 +141,7 @@ public class FlagWar extends JavaPlugin {
     /** Holds instance of the {@link BattleManager}. */
     private BattleManager battleManager;
     /** Holds instance of the {@link WaypointManager} */
-    private WaypointManager wayPointManager;
+    private WaypointManager waypointManager;
 
     /**
      * Initializes the Scheduler object based on whether we're using Folia/Paper or Spigot/Bukkit.
@@ -191,8 +190,6 @@ public class FlagWar extends JavaPlugin {
         return true;
     }
 
-
-
     /** On-Disable Protocol. */
     @Override
     public void onDisable() {
@@ -207,11 +204,12 @@ public class FlagWar extends JavaPlugin {
                 attackCanceled(cell);
             }
         }
+
+        deleteAllWayPoints();
     }
 
     private void getCommands() {
         getCommand("StageAdvance").setExecutor(new StageAdvance(this));
-        getCommand("GetBattles").setExecutor(new todelete());
     }
 
     private void setLocale() {
@@ -269,11 +267,11 @@ public class FlagWar extends JavaPlugin {
 
     /** Initialize Instances. */
     public void initializeInstances() {
+        waypointManager = new WaypointManager(this);
         databaseManager = new DatabaseManager(this);
         databaseInteraction = new DatabaseInteraction(getLogger(), databaseManager);
-        battleManager = new BattleManager(this, databaseInteraction, wayPointManager);
+        battleManager = new BattleManager(this, databaseInteraction, waypointManager);
         battleClock = new BattleClock(this, battleManager);
-        wayPointManager = new WaypointManager(this);
     }
 
     /** Initialize Event Listeners. */
@@ -518,7 +516,6 @@ public class FlagWar extends JavaPlugin {
                 CellUnderAttack cellAttackData = cell.getAttackData();
                 if (cellAttackData.isFlagTimer(block)) {
                     if (cellAttackData.decrementLife() == 0) {
-                        player.sendMessage("success " + cellAttackData.getLives());
                         FlagWar.attackDefended(player, cellAttackData);
                     }
 
@@ -619,7 +616,7 @@ public class FlagWar extends JavaPlugin {
         }
 
         long delay = 0;
-        if (CivicsUtil.isTechPresent(CivicsUtil.CAESAR_CIPHER, attackingResident)) delay = BannerWarConfig.getCaesarCipherDelay();
+        if (CivicsUtil.isTechPresent(CivicsUtil.CAESAR_CIPHER, attackingResident)) delay = BannerWarConfig.getCaesarCipherDelay() * 20L;
 
         String finalCoordinates = coordinates;
 
@@ -922,5 +919,10 @@ public class FlagWar extends JavaPlugin {
         } catch (ClassNotFoundException e) {
             return false;
         }
+    }
+
+    private void deleteAllWayPoints() {
+        for (var cua : getCellsUnderAttack())
+            waypointManager.deleteWaypoint(cua.getNameOfFlagOwner());
     }
 }
