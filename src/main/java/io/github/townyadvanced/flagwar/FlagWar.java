@@ -35,6 +35,7 @@ import com.palmergames.bukkit.towny.scheduling.impl.FoliaTaskScheduler;
 import com.palmergames.bukkit.towny.utils.AreaSelectionUtil;
 import com.palmergames.bukkit.util.Version;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.github.townyadvanced.flagwar.command.ReloadConfig;
 import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
@@ -210,6 +211,7 @@ public class FlagWar extends JavaPlugin {
 
     private void getCommands() {
         getCommand("StageAdvance").setExecutor(new StageAdvance(this));
+        getCommand("BannerWarReload").setExecutor(new ReloadConfig(this));
     }
 
     private void setLocale() {

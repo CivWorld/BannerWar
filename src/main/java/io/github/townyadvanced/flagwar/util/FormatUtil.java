@@ -68,7 +68,9 @@ public final class FormatUtil {
         String minutesPart = duration.toMinutesPart() > 0 ? tryGetPlural("minute", duration.toMinutesPart()) : "";
         String secondsPart = duration.toSecondsPart() > 0 ? tryGetPlural("second", duration.toSecondsPart()) : "";
 
-        String out = daysPart + " " + hoursPart + " " + minutesPart + " " + secondsPart;
+        String out = daysPart + " " + hoursPart + " " + minutesPart + " " + secondsPart
+            .replaceAll(" +", " ");
+
         return out.trim();
     }
 }

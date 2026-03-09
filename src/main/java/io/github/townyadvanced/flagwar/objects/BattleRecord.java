@@ -14,7 +14,7 @@ import java.util.UUID;
  * @param defender the defending nation's name
  * @param homeX the X coordinate of the homeblock
  * @param homeZ the Z coordinate of the homeblock
- * @param stageStartTime the time, in milliseconds, where the current stage started
+ * @param stageStartTime the time, in milliseconds, when the current stage started
  * @param isCityState whether the town this battle is hosted in is a CityState
  * @param stage the {@link BattleStage} that this battle is currently on
  * @param worldID the {@link UUID} of the world that this battle is hosted in

@@ -13,6 +13,7 @@ import io.github.townyadvanced.flagwar.events.BattleEndEvent;
 import io.github.townyadvanced.flagwar.events.BattleFlaggableEvent;
 import io.github.townyadvanced.flagwar.events.BattleRuinEvent;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
+import io.github.townyadvanced.flagwar.util.HologramUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -106,7 +107,10 @@ public class Battle {
             contestedTown,
             BattleUtil.toWorldCoords(contestedTown.getTownBlocks()),
             System.currentTimeMillis(),
-            contestedTown.getHomeBlockOrNull(),
+
+            // before a battle begins, the homeblock existence is checked at the battle listener
+            Objects.requireNonNull(contestedTown.getHomeBlockOrNull()),
+
             isCityState,
             BattleStage.PRE_FLAG,
             contestedTown.getMayor()
@@ -146,6 +150,12 @@ public class Battle {
     public TownBlock getHomeBlock() {
         return TownyAPI.getInstance().getTownBlock(HOME_BLOCK_COORDS);
     }
+
+    /** Returns the home block {@link WorldCoord} of the town where the battle is held. */
+    public WorldCoord getHomeBlockCoords() {
+        return HOME_BLOCK_COORDS;
+    }
+
 
     /** Returns the town where the battle is held. */
     public Town getContestedTown() {
@@ -379,7 +389,7 @@ public class Battle {
         );
 
         bossBar.setTitle(
-            String.format(bossBarMessage, getContestedTown().getName(), getCurrentStage().name().toUpperCase())
+            String.format(bossBarMessage, getContestedTown().getName(), getCurrentStage().name().toUpperCase().replace("_", " "))
         );
 
         for (Player p : Bukkit.getServer().getOnlinePlayers()) {

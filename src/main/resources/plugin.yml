@@ -35,3 +35,9 @@ commands:
             - PhaseAdvance
             - pa
             - sa
+    BannerWarReload:
+        description: Reloads the configuration file for BannerWar.
+        usage: /<command>
+        aliases:
+            - bwreload
+            - bwr

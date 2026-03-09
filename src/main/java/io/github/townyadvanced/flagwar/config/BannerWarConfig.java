@@ -1,6 +1,7 @@
 package io.github.townyadvanced.flagwar.config;
 
 import io.github.townyadvanced.flagwar.FlagWar;
+import io.github.townyadvanced.flagwar.objects.BattleStage;
 import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
 
@@ -16,7 +17,6 @@ public class BannerWarConfig {
 
     /** Holds an instance of FlagWar's logger. */
     private static final Logger LOGGER = PLUGIN.getLogger();
-
 
     public static long getCurrentTownyDay() {
         return PLUGIN.getConfig().getLong("universe.current_day");
@@ -92,7 +92,7 @@ public class BannerWarConfig {
 
     public static int getFlagLifePrice(int n) {
         int base = PLUGIN.getConfig().getInt("flag_lives.base_price");
-        return (int) (base * Math.round(Math.pow(2, n)));
+        return (int) (base * Math.round(Math.pow(2, n))); // 2 ^ n is a bitwise operation, so use Math.pow().
     }
 
     /**
@@ -101,6 +101,10 @@ public class BannerWarConfig {
      */
     private static int getFromWeariness(String dir) {
         return PLUGIN.getConfig().getInt("civics.war_weariness." + dir);
+    }
+
+    public static int getBaseWearinessValue() {
+        return getFromWeariness("base_price");
     }
 
     public static int getFlagPlaceAttackerIncrease() {
@@ -187,4 +191,14 @@ public class BannerWarConfig {
         return PLUGIN.getConfig().getInt("civics.civtechs.war_economy.percentage_weariness_decrease");
     }
 
+    public static double getTimeMultiplier(BattleStage stage) {
+        double out = PLUGIN.getConfig().getDouble("battle.timing_multipliers." + stage.name().toLowerCase(Locale.ROOT));
+
+        if (out <= 0) {
+            LOGGER.warning("Configured multiplier " + out + " for battle stage " + stage.name() + " not suitable! Returning 1.0 instead.");
+            return 1.0;
+        }
+
+        return out;
+    }
 }

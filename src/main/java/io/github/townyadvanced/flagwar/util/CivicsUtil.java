@@ -29,9 +29,6 @@ public final class CivicsUtil {
 
     public static final String FORMATTED_WEARINESS = "War Weariness (%d%%)";
 
-    /** Holds the base price that all modifier percentages will be multiplied with. */
-    public static final double BASE = 10;
-
     /** Holds the ID of the Caesar cipher {@link CivTech}. */
     public static final String CAESAR_CIPHER = "bannerwar_caesar_cipher";
 
@@ -193,15 +190,15 @@ public final class CivicsUtil {
         return 0.0;    }
 
     public static double getWearinessAsPercentage(Town town) {
-        return getWeariness(town)/BASE;
+        return getWeariness(town)/BannerWarConfig.getBaseWearinessValue();
     }
 
     public static double getWearinessAsPercentage(Nation nation) {
-        return getWeariness(nation)/BASE;
+        return getWeariness(nation)/BannerWarConfig.getBaseWearinessValue();
     }
 
     private static void changeTownWeariness(Town town, double d) {
-        double h = d*BASE;
+        double h = d*BannerWarConfig.getBaseWearinessValue();
 
         if (town == null) {
             PLUGIN.getLogger().warning("Cannot change weariness by " + h + " because town is null!");
@@ -219,7 +216,7 @@ public final class CivicsUtil {
     }
 
     private static void changeNationWeariness(Nation nation, double d) {
-        double h = d*BASE;
+        double h = d*BannerWarConfig.getBaseWearinessValue();
 
         if (nation == null) {
             PLUGIN.getLogger().warning("Cannot change weariness by " + h + " because nation is null!");
@@ -237,6 +234,6 @@ public final class CivicsUtil {
     }
 
     private static double toPercentage(double d) {
-        return d/BASE;
+        return d/BannerWarConfig.getBaseWearinessValue();
     }
 }

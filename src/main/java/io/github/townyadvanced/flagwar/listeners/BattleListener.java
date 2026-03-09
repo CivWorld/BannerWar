@@ -264,9 +264,6 @@ public class BattleListener implements Listener {
                         // how much the next life costs, hence + 1.
                         int price = BannerWarConfig.getFlagLifePrice(cell.getLifeAdditions() + 1);
 
-                        System.out.println(price);
-                        System.out.println(held.getAmount());
-
                         if (held.getType() == required && held.getAmount() >= price) {
 
                             if (cell.tryAddLife())

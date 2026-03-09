@@ -177,6 +177,27 @@ universe:
     # Do NOT modify this unless you are willing to mess with upkeep values.
     current_day: 1
 
+# Define settings relating to battles features.
+battle:
+
+    # Define timing multipliers for each battle stage.
+    # If the multiplier is set to 2.0, that stage will take twice as long as it would've at 1.0.
+    # Values of 0.0 or less will be taken as 1.0.
+    # The dormant stage's timings are clamped such that the stage can never be shorter than a day.
+    timing_multipliers:
+
+        # The time multiplier for the pre-flag stage, the stage before flagging is allowed.
+        pre_flag: 1.0
+
+        # The time multiplier for the pre-flag stage, the stage where flagging is allowed.
+        flag: 1.0
+
+        # The time multiplier for the pre-flag stage, the stage where a town lost the battle defense and is ruined.
+        ruined: 1.0
+
+        # The time multiplier for the pre-flag stage, the stage where a town is under cooldown from a battle.
+        dormant: 1.0
+
 
 # Define price, item of payment and other actions relating to the flag lives system.
 flag_lives:
@@ -245,6 +266,9 @@ civics:
     # Define various percentage increases, decreases and thresholds of war weariness
     # associated with battle-related actions.
     war_weariness:
+
+        # The amount money percentages are multiplied with to make the final upkeep price.
+        base_price: 10
 
         # Define the weariness percentage changes due to a flag place.
         flag_place:

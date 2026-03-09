@@ -1,10 +1,7 @@
 package io.github.townyadvanced.flagwar;
 
 import com.palmergames.bukkit.towny.TownyAPI;
-import com.palmergames.bukkit.towny.object.Nation;
-import com.palmergames.bukkit.towny.object.Resident;
-import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.TownBlock;
+import com.palmergames.bukkit.towny.object.*;
 import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
@@ -70,6 +67,10 @@ public final class BannerWarAPI {
         }
 
         return null;
+    }
+
+    public static Battle getBattleAt(WorldCoord coord) {
+        return getBattleAt(TownyAPI.getInstance().getTownBlock(coord));
     }
 
     /**

@@ -1,7 +1,9 @@
 package io.github.townyadvanced.flagwar.objects;
 
 /**
- * Holds one of the various stages a {@link Battle} could be in.
+ * Holds one of the various stages a {@link Battle} could be in. <p>
+ * Note that not all {@link BattleStage}s are guaranteed to be accessed in a battle.
+ * For example, a battle that is won by the defender will never reach the {@link #RUINED} stage.
  */
 public enum BattleStage {
 

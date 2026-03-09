@@ -22,7 +22,17 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static void sendMessage(Player p, String msg) {
-        p.sendMessage(prepareMessage(msg));
+       sendMessage(p, msg, ChatColor.RESET);
+    }
+
+    /**
+     * Sends a message to the specified {@link Player}, formatted for BannerWar.
+     * @param p the specified {@link Player}
+     * @param msg the message
+     * @param color the {@link ChatColor} that this message will be in
+     */
+    public static void sendMessage(Player p, String msg, ChatColor color) {
+        p.sendMessage(prepareMessage(color + msg));
     }
 
     /**

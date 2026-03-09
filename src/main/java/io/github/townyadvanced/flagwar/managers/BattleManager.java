@@ -206,9 +206,10 @@ public final class BattleManager {
      * @return whether the victory of this {@link CellUnderAttack} resulted in the end of the battle due to home block capturing.
      */
     public boolean registerAttackWon(CellUnderAttack c) {
-        TownBlock tb = TownyAPI.getInstance().getTownBlock(new WorldCoord(c.getWorldName(), c.getX(), c.getZ()));
 
-        Battle battle = BannerWarAPI.getBattleAt(tb);
+        WorldCoord wc = new WorldCoord(c.getWorldName(), c.getX(), c.getZ());
+        Battle battle = BannerWarAPI.getBattleAt(wc);
+
         if (battle == null) {
             PLUGIN.getLogger().warning("The flag placed by " + c.getNameOfFlagOwner() + " is flagging during a null battle!");
             return false;
@@ -216,7 +217,7 @@ public final class BattleManager {
 
         WAYPOINT_MANAGER.deleteWaypoint(c.getNameOfFlagOwner());
 
-        if (battle.getContestedTown().isHomeBlock(tb)) {
+        if (battle.getHomeBlockCoords().equals(wc)) {
             battle.loseDefense(); // check if this code works, if not, bring it back.
             return true;
         }

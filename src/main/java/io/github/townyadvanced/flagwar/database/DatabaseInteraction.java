@@ -54,7 +54,6 @@ public final class DatabaseInteraction {
                             UUID.fromString(rs.getString(11))
                         ));
                     }
-                    System.out.println(battles);
                     return battles;
                 }
             } catch (SQLException e) {

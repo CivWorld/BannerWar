@@ -181,7 +181,7 @@ public class WearinessListener implements Listener {
                     CivicsUtil.decreaseWeariness(town, guaranteedDecrease);
         }
 
-        // 7 day expiration decrease.
+        // expiration decrease.
         BATTLE_MANAGER.getAllExpiredBannerPlacers(BannerWarConfig.getDaysUntilBannerPlacerExpired()).thenAccept(bannerPlacers ->
             bannerPlacers.forEach(placer -> {
                 if (placer.getNationOrNull() != null
