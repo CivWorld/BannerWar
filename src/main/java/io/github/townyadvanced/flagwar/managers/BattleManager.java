@@ -120,6 +120,9 @@ public final class BattleManager {
 
     /**
      * Begins a battle.
+     * <p>
+     * Logs the banner placement onto the database, puts the battle into {@link #ACTIVE_BATTLES},
+     * copies the chunks of the claims of the contested town, and fires a new {@link BattleStartEvent}.
      * @param contestedTown the {@link Town} where the {@link Battle} is hosted
      * @param attacker the nation that initiated the {@link Battle}
      * @param defender the nation that houses the {@link Town} where the {@link Battle} is hosted

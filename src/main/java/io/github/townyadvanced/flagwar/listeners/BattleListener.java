@@ -48,7 +48,7 @@ public class BattleListener implements Listener {
     }
 
     @EventHandler (priority = EventPriority.HIGH)
-    public void onBannerBlockPlace(TownyBuildEvent event){
+    public void onBannerBlockPlace(TownyBuildEvent event) {
         TownBlock townBlock = event.getTownBlock();
 
         if (townBlock == null
@@ -119,7 +119,7 @@ public class BattleListener implements Listener {
             return;
         }
 
-        if (!attacker.hasEnemy(defender)) {
+        if (attacker != null && !attacker.hasEnemy(defender)) {
             Broadcasts.sendErrorMessage(event.getPlayer(), "You are not enemies with this nation!");
             return;
         }
@@ -237,7 +237,7 @@ public class BattleListener implements Listener {
         BATTLE_MANAGER.registerAttackLost(c);
     }
 
-    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = false)
+    @EventHandler (priority = EventPriority.MONITOR)
     public void onAddFlagLife(PlayerInteractEvent e) {
 
         Block b = e.getClickedBlock();
@@ -264,14 +264,7 @@ public class BattleListener implements Listener {
                         // how much the next life costs, hence + 1.
                         int price = BannerWarConfig.getFlagLifePrice(cell.getLifeAdditions() + 1);
 
-                        if (held.getType() == required && held.getAmount() >= price) {
-
-                            if (cell.tryAddLife())
-                                Broadcasts.sendMessage(e.getPlayer(), ChatColor.GREEN + "You have added a life!");
-                            else {
-                                Broadcasts.sendErrorMessage(e.getPlayer(), "You cannot add any more lives!");
-                                return;
-                            }
+                        if (held.getType() == required && held.getAmount() >= price && cell.tryAddLife(e.getPlayer())) {
 
                             held.setAmount(held.getAmount() - price);
                             e.getPlayer().getInventory().setItemInMainHand(held);

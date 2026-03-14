@@ -5,6 +5,7 @@ import io.github.townyadvanced.flagwar.objects.BattleStage;
 import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
 
+import java.time.Duration;
 import java.util.Locale;
 import java.util.logging.Logger;
 
@@ -200,5 +201,27 @@ public class BannerWarConfig {
         }
 
         return out;
+    }
+
+    public static Material getInvincibilityMaterial() {
+        Material m;
+
+        try {
+            m = getMaterial("flag_lives.invincibility_material", Material.BEDROCK);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warning("Invalid invincible flag material. Using bedrock instead.");
+            return Material.ANCIENT_DEBRIS;
+        }
+
+        return m;
+
+    }
+
+    public static long getInvincibilityDuration() {
+        return PLUGIN.getConfig().getLong("flag_lives.invincibility_duration");
+    }
+
+    public static Duration getTimeUntilNoMoreLives() {
+        return Duration.ofSeconds(PLUGIN.getConfig().getLong("flag_lives.time_until_no_more_lives"));
     }
 }

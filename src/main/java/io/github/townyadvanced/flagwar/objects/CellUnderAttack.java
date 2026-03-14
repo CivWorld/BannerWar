@@ -20,18 +20,19 @@ package io.github.townyadvanced.flagwar.objects;
 import com.palmergames.bukkit.towny.scheduling.ScheduledTask;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
-import io.github.townyadvanced.flagwar.util.CivicsUtil;
-import io.github.townyadvanced.flagwar.util.HologramUtil;
+import io.github.townyadvanced.flagwar.util.*;
 import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.scheduling.TaskScheduler;
 
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.i18n.Translate;
-import io.github.townyadvanced.flagwar.util.Messaging;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.nio.charset.StandardCharsets;
@@ -77,6 +78,9 @@ public class CellUnderAttack extends Cell {
     /** Holds the time, in seconds, assuming 20 ticks is 1 second, that the war flag has left. */
     private Duration flagTimeLeft;
 
+    /** Holds the time, in seconds, assuming 20 ticks is 1 second, that have elapsed since the flag was placed. */
+    private Duration flagTimeElapsed = Duration.ZERO;
+
     /** Holds the number of lives the {@link CellUnderAttack} has. */
     private int lives = 1;
 
@@ -94,6 +98,9 @@ public class CellUnderAttack extends Cell {
 
     /** Holds the number of lives left required to initiate the {@link CivicsUtil#INFERNAL_WARFLAGS} CivTech, assuming the {@link #nameOfFlagOwner} has it. */
     private static final int LIVES_TO_INFERNAL = 3;
+
+    /** Holds whether the flag has recently been broken and is therefore temporarily invincible. */
+    private boolean isInvincible;
 
     /**
      * Prepares the CellUnderAttack.
@@ -279,14 +286,14 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
-     * If {@link #hasEnded()} returns False and {@link #isInfernal()} also returns False, update the {@link #flagTimerBlock} from the timerBlock array, using the
+     * If {@link #hasEnded()} returns False and {@link #shouldNotSwitchColor()} also returns False, update the {@link #flagTimerBlock} from the timerBlock array, using the
      * {@link #flagPhaseID} for the array ID.
      * Finally, log the update on the INFO channel.
      */
     public void updateFlag() {
         Material[] timer = FlagWarConfig.getTimerBlocks();
 
-        if (!hasEnded() && !isInfernal()) {
+        if (!hasEnded() && !shouldNotSwitchColor()) {
 
             flagTimerBlock.setType(timer[flagPhaseID]);
             // for (Block block : beaconFlagBlocks) block.setType(timer[flagPhaseID]);
@@ -338,7 +345,10 @@ public class CellUnderAttack extends Cell {
         flagUpdateTask = scheduler.runLater(this::updateCell, ticksFromMs);
 
         updateTimeTask =
-            scheduler.runRepeating(() -> flagTimeLeft = flagTimeLeft.minusMillis(50), 1, 1);
+            scheduler.runRepeating(() -> {
+                flagTimeElapsed = flagTimeElapsed.plusMillis(50);
+                flagTimeLeft = flagTimeLeft.minusMillis(50);
+            }, 1, 1);
 
         if (FlagWarConfig.isHologramEnabled()) {
             HologramUtil.drawHologram(getCellHologramKey(), flagLightBlock.getLocation(), flagTimeLeft);
@@ -470,11 +480,28 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
-     * Tries to add a life to the {@link CellUnderAttack}, respecting that it may have exceeded the permissible number of {@link CellUnderAttack#lifeAdditions}.
+     * Tries to add a life to the {@link CellUnderAttack},
+     * respecting that it may have exceeded the permissible number of {@link CellUnderAttack#lifeAdditions}
+     * or that the time elapsed has exceeded the allowed flag life interval.
+     * <p>
+     * Also messages the player the result of the operation.
+     * @param adder the {@link Player} who added this life
      * @return whether a life has been added
      */
-    public boolean tryAddLife() {
-        if (lifeAdditions == BannerWarConfig.getExtraFlagLives()) return false;
+    public boolean tryAddLife(Player adder) {
+
+        if (lifeAdditions == BannerWarConfig.getExtraFlagLives()) {
+            Broadcasts.sendErrorMessage(adder, "You cannot add any more lives!");
+            return false;
+        }
+
+        Duration threshold = BannerWarConfig.getTimeUntilNoMoreLives();
+
+        if (!flagTimeElapsed.minus(threshold).isNegative()) {
+            Broadcasts.sendErrorMessage(adder, "You cannot add any lives after " + FormatUtil.getFormattedTime(threshold) + "!");
+            return false;
+        }
+
         flagTimeLeft = flagTimeLeft.plusSeconds(BannerWarConfig.getFlagLifeTimeIncrease());
 
         lives++;
@@ -483,6 +510,7 @@ public class CellUnderAttack extends Cell {
         if (isInfernal()) makeInfernal();
         updateFlag();
 
+        Broadcasts.sendMessage(adder, "You have added a life!", ChatColor.GREEN);
         return true;
     }
 
@@ -500,6 +528,8 @@ public class CellUnderAttack extends Cell {
     public int decrementLife() {
         lives--;
         if (isInfernal()) makeInfernal();
+        makeInvincible();
+
         updateFlag();
         return lives;
     }
@@ -543,9 +573,27 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
+     * Returns whether the state of the {@link #flagTimerBlock} is not of a color (e.g. turns into bedrock after a break),
+     * meaning it should not switch to one until it's been switched out by the original block changer.
+     */
+    private boolean shouldNotSwitchColor() {
+        return isInfernal() || isInvincible;
+    }
+
+    /**
      * Returns the number of lives that have been added to this {@link CellUnderAttack}.
      */
     public int getLifeAdditions() {
         return lifeAdditions;
+    }
+
+    public void makeInvincible() {
+        flagTimerBlock.setType(BannerWarConfig.getInvincibilityMaterial());
+        isInvincible = true;
+
+        scheduler.runLater(() -> {
+            isInvincible = false;
+            if (lives > 0) updateFlag();
+        }, BannerWarConfig.getInvincibilityDuration()*20L);
     }
 }

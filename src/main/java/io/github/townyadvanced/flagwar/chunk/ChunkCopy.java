@@ -59,11 +59,13 @@ public final class ChunkCopy {
                         int ny = y + 64; // it's going to otherwise be out of bounds because y is negative
                         BlockData d = c.getBlockData(x, y, z);
 
+                        int i = x + (z * 16) + (ny * 16 * 16);
+
                         if (c.getBlockType(x, y, z) != Material.AIR) {
-                            materials[x + (z * 16) + (ny * 16 * 16)] = c.getBlockType(x, y, z).toString();
+                            materials[i] = c.getBlockType(x, y, z).toString();
 
                             if (isBlockDataUseful(d))
-                                blockDatas[x + (z * 16) + (ny * 16 * 16)] = d.getAsString();
+                                blockDatas[i] = d.getAsString();
                         }
                     }
 

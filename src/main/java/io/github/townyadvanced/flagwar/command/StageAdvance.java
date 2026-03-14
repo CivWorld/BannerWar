@@ -37,7 +37,7 @@ public class StageAdvance implements CommandExecutor {
 
             else if (BannerWarAPI.getBattle(townName) != null) {
                 BannerWarAPI.getBattle(townName).advanceStage(toWin);
-                Broadcasts.sendMessage(p, ChatColor.GREEN + "Advanced stage for " + townName + "!");
+                Broadcasts.sendMessage(p, "Advanced stage for " + townName + "!", ChatColor.GREEN);
             }
             else {
                 Broadcasts.sendMessage(p, ChatColor.RED + townName + " is not in a battle or does not exist!");

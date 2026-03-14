@@ -218,6 +218,17 @@ flag_lives:
     # E.g. a base price of 4 would mean that the second extra life costs 4 * 2^2 = 16 items.
     base_price: 4
 
+    # How long into the flag's lifetime until flag lives cannot be added anymore. Measured in seconds.
+    time_until_no_more_lives: 10
+
+    # How long a flag becomes 'invincible' after having a life taken away. Measured in seconds.
+    invincibility_duration: 1
+
+    # The block type that the flag will be in to denote that it is 'invincible'. Case-insensitive.
+    # NOTE: the flag will still be breakable if the supplied material is breakable,
+    # hence the apostrophes around 'invincible'.
+    invincibility_material: bedrock
+
 # Define settings relating to the internal clock that updates battles, database storage and GUI information.
 clock:
 
