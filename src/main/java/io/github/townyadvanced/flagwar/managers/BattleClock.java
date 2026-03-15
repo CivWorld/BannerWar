@@ -1,7 +1,6 @@
-package io.github.townyadvanced.flagwar;
+package io.github.townyadvanced.flagwar.managers;
 
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
-import io.github.townyadvanced.flagwar.managers.BattleManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -38,7 +37,7 @@ public final class BattleClock {
      */
     private void start() {
 
-        long secondsPerCycle = (long) Math.ceil(BannerWarConfig.getCycleSpeedSeconds() * 20L);
+        long secondsPerCycle = BannerWarConfig.getCycleSpeedSeconds() * 20L;
 
         CLOCK_TASK = SCHEDULER.runTaskTimer(
             PLUGIN,

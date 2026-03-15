@@ -177,6 +177,13 @@ universe:
     # Do NOT modify this unless you are willing to mess with upkeep values.
     current_day: 1
 
+    # All materials that will not be pasted by the post-war chunk pasting system. Case-insensitive.
+    blacklisted_materials:
+        - diamond_ore
+        - diamond_block
+        - gold_ore
+        - gold_block
+
 # Define settings relating to battles features.
 battle:
 
@@ -235,7 +242,7 @@ clock:
     # The rate at which the clock ticks; the clock speed. Measured in seconds per cycle.
     # Increase this number if your server is struggling to accommodate a large number of battles.
     # Decrease this number if you find that battles are not updating fast enough.
-    # All non-negative and non-zero numbers are permitted, including fractions.
+    # Fractional numbers will have their fractional part removed.
     cycle_speed: 3
 
 

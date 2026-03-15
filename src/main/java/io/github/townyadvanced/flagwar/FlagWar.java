@@ -50,6 +50,7 @@ import io.github.townyadvanced.flagwar.events.CellWonEvent;
 import io.github.townyadvanced.flagwar.i18n.LocaleUtil;
 import io.github.townyadvanced.flagwar.i18n.Translate;
 import io.github.townyadvanced.flagwar.listeners.*;
+import io.github.townyadvanced.flagwar.managers.BattleClock;
 import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.managers.WaypointManager;
 import io.github.townyadvanced.flagwar.objects.Cell;
@@ -137,8 +138,8 @@ public class FlagWar extends JavaPlugin {
     private DatabaseManager databaseManager;
     /** Holds instance of the {@link DatabaseInteraction}. */
     private DatabaseInteraction databaseInteraction;
-    /** Holds instance of the {@link BattleClock}. */
-    private BattleClock battleClock;
+    /** Holds instance of the {@link io.github.townyadvanced.flagwar.managers.BattleClock}. */
+    private io.github.townyadvanced.flagwar.managers.BattleClock battleClock;
     /** Holds instance of the {@link BattleManager}. */
     private BattleManager battleManager;
     /** Holds instance of the {@link WaypointManager} */

@@ -6,7 +6,10 @@ import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class BannerWarConfig {
@@ -223,5 +226,26 @@ public class BannerWarConfig {
 
     public static Duration getTimeUntilNoMoreLives() {
         return Duration.ofSeconds(PLUGIN.getConfig().getLong("flag_lives.time_until_no_more_lives"));
+    }
+
+    public static Set<Material> getBlacklistedMaterials() {
+
+        String dir = "universe.blacklisted_materials";
+
+        var raw = PLUGIN.getConfig().getStringList(dir);
+        HashSet<Material> out = new HashSet<>();
+
+        for (var element : raw) {
+            Material mat = Material.matchMaterial(element.toUpperCase(Locale.ROOT));
+
+            if (mat == null) {
+                LOGGER.warning("Invalid blacklisted material: " + element + ". Please check your configuration file at '" + dir + "'.");
+                continue;
+            }
+            out.add(mat);
+        }
+
+
+        return out;
     }
 }

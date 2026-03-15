@@ -1,6 +1,7 @@
 package io.github.townyadvanced.flagwar.chunk;
 
 import io.github.townyadvanced.flagwar.FlagWar;
+import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -14,6 +15,7 @@ import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,12 +46,13 @@ public final class ChunkPaste {
     private final Path CHUNK_PATH;
 
     /** Holds every {@link Material} that should not be restored. */
-    private final Set<Material> BLACKLISTED_MATERIALS = Set.of(Material.DIAMOND_ORE);
+    // private final Set<Material> BLACKLISTED_MATERIALS;
 
     public ChunkPaste(JavaPlugin plugin) {
         this.PLUGIN = plugin;
         this.LOGGER = plugin.getLogger();
         this.CHUNK_PATH = plugin.getDataFolder().toPath().resolve("chunks");
+        // BLACKLISTED_MATERIALS = BannerWarConfig.getBlacklistedMaterials();
     }
 
     /**
@@ -70,7 +73,6 @@ public final class ChunkPaste {
     public void paste(Collection<PersistentChunk> persistentChunks, World world, int batchSize) {
 
         Deque<PersistentChunk> persistentChunksQueue = new ArrayDeque<>(persistentChunks);
-
         CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
 
         do {
@@ -109,29 +111,32 @@ public final class ChunkPaste {
 
                 if (!chunkFile.exists()) continue;
 
-                try {
-                    try (FileInputStream fis = new FileInputStream(chunkFile);
-                         ObjectInputStream ois = new ObjectInputStream(fis)) {
+                try (FileInputStream fis = new FileInputStream(chunkFile);
+                     ObjectInputStream ois = new ObjectInputStream(fis)) {
 
-                        pc.setMaterials((String[]) ois.readObject());
-                        pc.setBlockData((String[]) ois.readObject());
-                        out.add(pc);
-
-                    } catch (Exception e) {
-                        LOGGER.severe(e.getMessage());
-                    }
-
-                    Files.deleteIfExists(chunkFile.toPath());
+                    pc.setMaterials((String[]) ois.readObject());
+                    pc.setBlockData((String[]) ois.readObject());
+                    out.add(pc);
 
                 } catch (Exception e) {
-                    LOGGER.severe(e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        Files.deleteIfExists(chunkFile.toPath());
+                    } catch (IOException e) {
+                        LOGGER.warning("Could not delete chunk file for chunk " + chunkFile.getName() + "!" + e.getMessage());
+                    }
                 }
             }
+
             return out;
         });
     }
 
     private void pasteToWorld(Deque<PersistentChunk> persistentChunksQueue, World world) {
+
+        var blacklistedMaterials = BannerWarConfig.getBlacklistedMaterials();
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -162,7 +167,7 @@ public final class ChunkPaste {
                         if (newMat == null) thisBlock.setType(Material.AIR);
 
                         else {
-                            if (BLACKLISTED_MATERIALS.contains(newMat)) continue;
+                            if (blacklistedMaterials.contains(newMat)) continue;
 
                             thisBlock.setType(newMat);
 
@@ -176,6 +181,10 @@ public final class ChunkPaste {
                 }
             }
         }.runTaskTimer(PLUGIN, 0, 1);
+    }
+
+    private void deleteFiles(Collection<PersistentChunk> persistentChunks) {
+
     }
 
     /**
