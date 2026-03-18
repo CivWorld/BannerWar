@@ -15,8 +15,10 @@ import io.github.townyadvanced.flagwar.objects.*;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
+import town.sheepy.townyAI.TownyAI;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,7 +59,7 @@ public final class BattleManager {
 
         DATABASE_INTERACTION.getBattles().thenAccept(battleRecords -> {
             for (BattleRecord r : battleRecords) {
-                Battle battle = new Battle(r);
+                Battle battle = new Battle(r, this);
                 ACTIVE_BATTLES.put(r.contestedTown(), battle);
                 PLUGIN.getLogger().info("Battle " + r.contestedTown() + " has been resumed");
 
@@ -99,12 +101,13 @@ public final class BattleManager {
                 CompletableFuture.runAsync(() -> {
 
                     for (String flagOwner : battle.getFlagOwners()) {
-                        WAYPOINT_MANAGER.addPlayersToWaypoint(
-                            associated, flagOwner
-                        );
 
                         WAYPOINT_MANAGER.removePlayersFromWaypoint(
-                            notAssociated, flagOwner
+                            (Collection<Player>) Bukkit.getOnlinePlayers(), flagOwner
+                        );
+
+                        WAYPOINT_MANAGER.addPlayersToWaypoint(
+                            associated, flagOwner
                         );
                     }
                 }, runnable -> SCHEDULER.runTask(PLUGIN, runnable));
@@ -114,7 +117,9 @@ public final class BattleManager {
                 return null;
             });
 
-            DATABASE_INTERACTION.insertOrUpdate(BattleRecord.of(battle));
+            BattleRecord rec = BattleRecord.of(battle);
+            if (battle.getHomeBlock() != null && battle.getContestedTown() != null && rec != null)
+                DATABASE_INTERACTION.insertOrUpdate(rec);
         }
     }
 
@@ -129,15 +134,21 @@ public final class BattleManager {
      */
     public void startBattle(Town contestedTown, Nation attacker, Nation defender, Town bannerPlacer) {
 
-        Battle battle = new Battle(attacker, defender, contestedTown, false);
-        ACTIVE_BATTLES.put(contestedTown.getName(), battle);
+        TownyAI.getTownyAIAPI().isCityStateAsync(contestedTown.getName()).thenAccept(result ->
+            CompletableFuture.runAsync(() -> {
 
-        logBannerPlacer(BannerPlacerRecord.of(bannerPlacer));
+                Battle battle = new Battle(attacker, defender, contestedTown, result, this);
+                ACTIVE_BATTLES.put(contestedTown.getName(), battle);
 
-        var chunks = BattleUtil.toChunks(contestedTown.getTownBlocks(), contestedTown.getWorld());
-        ChunkCopy.getInstance().copy(BattleUtil.toChunkSnapshot(chunks));
+                logBannerPlacer(BannerPlacerRecord.of(bannerPlacer));
 
-        Bukkit.getServer().getPluginManager().callEvent(new BattleStartEvent(battle, bannerPlacer));
+                var chunks = BattleUtil.toChunks(contestedTown.getTownBlocks(), contestedTown.getWorld());
+                ChunkCopy.getInstance().copy(BattleUtil.toChunkSnapshot(chunks));
+
+                Bukkit.getServer().getPluginManager().callEvent(new BattleStartEvent(battle, bannerPlacer));
+
+            }, runnable -> SCHEDULER.runTask(PLUGIN, runnable))
+        );
     }
 
     /**
@@ -149,11 +160,20 @@ public final class BattleManager {
     }
 
     /**
-     * Removes the {@link Battle} from the {@link #ACTIVE_BATTLES} map and the database.
+     * Removes the {@link Battle} from the {@link #ACTIVE_BATTLES} map.
      * @param battle the specified {@link Battle}
      */
     public static void removeBattle(Battle battle) {
-        ACTIVE_BATTLES.remove(battle.getContestedTown().getName());
+        removeBattle(battle.getContestedTown());
+    }
+
+    /**
+     * Removes the {@link Battle} from the {@link #ACTIVE_BATTLES} map and the database.
+     * @param battle the specified {@link Battle}
+     * */
+    public void removeBattleAndDB(Battle battle) {
+        removeBattle(battle);
+        DATABASE_INTERACTION.deleteBattle(battle.getContestedTown().getName());
     }
 
     /**
@@ -161,7 +181,7 @@ public final class BattleManager {
      * @param town the specified {@link Battle}'s contested town.
      */
     public static void removeBattle(Town town) {
-        ACTIVE_BATTLES.remove(town.getName());
+        removeBattle(town.getName());
     }
 
     /**

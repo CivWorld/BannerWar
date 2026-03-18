@@ -146,10 +146,10 @@ economy:
 # Define what is allowed to take place in TownBlocks which have attacks ongoing.
 warzone:
     # List of materials that can be modified in a warzone.
-    # '*' = Allow all materials.
-    # Prepend a '-' in front of a material to remove it. Used in conjunction with when you use '*'.
-    # Eg: '*,-chest,-furnace'
-    editable_materials: tnt,oak_fence,birch_fence,spruce_fence,jungle_fence,dark_oak_fence,acacia_fence,ladder,oak_door,birch_door,spruce_door,jungle_door,dark_oak_door,acacia_fence,iron_door,fire,ancient_debris
+    # '$' = Allow all materials.
+    # Prepend a '-' in front of a material to remove it. Used in conjunction with when you use '$'.
+    # Eg: '$,-chest,-furnace'
+    editable_materials: $
     item_use: true
     switch: true
 
@@ -172,6 +172,7 @@ extra:
 
 # Define global information about the server that this plugin runs on.
 universe:
+
     # The number of Towny days that have passed since the plugin was installed,
     # assuming the plugin was enabled during the new day event.
     # Do NOT modify this unless you are willing to mess with upkeep values.
@@ -184,7 +185,7 @@ universe:
         - gold_ore
         - gold_block
 
-# Define settings relating to battles features.
+# Define settings relating to battle features.
 battle:
 
     # Define timing multipliers for each battle stage.
@@ -208,6 +209,7 @@ battle:
 
 # Define price, item of payment and other actions relating to the flag lives system.
 flag_lives:
+
     # How many lives you can add.
     count: 3
 

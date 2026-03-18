@@ -24,19 +24,23 @@ public class ReloadConfig implements CommandExecutor {
 
         if (commandSender instanceof Player p) {
             if (!p.isOp())
-                Broadcasts.sendErrorMessage(p,"You do not have permission to execute this command.");
-
+                Broadcasts.sendErrorMessage(p, "You do not have permission to execute this command.");
             else {
+                try {
+                    plugin.reloadConfig();
+                    Broadcasts.sendMessage(p, "BannerWar config reload successful!", ChatColor.GREEN);
+                } catch (Exception e) {
+                    Broadcasts.sendErrorMessage(p, "Failed to reload config! " + e.getMessage());
+                }
+            }
+        } else if (commandSender instanceof ConsoleCommandSender) {
+            try {
                 plugin.reloadConfig();
-                Broadcasts.sendMessage(p, "BannerWar reload successful!", ChatColor.GREEN);
+                plugin.getLogger().info("BannerWar reload successful!");
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
-
-        else if (commandSender instanceof ConsoleCommandSender) {
-            plugin.reloadConfig();
-            plugin.getLogger().info("BannerWar reload successful!");
-        }
-
         return true;
     }
 }

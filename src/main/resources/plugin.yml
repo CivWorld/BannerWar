@@ -22,10 +22,10 @@ softdepend:
     - DecentHolograms
     - WorldEdit
     - PlayerLocatorAPI
-    - TownyAI
 
 depend:
     - Towny
+    - townyAI
 
 commands:
     StageAdvance:

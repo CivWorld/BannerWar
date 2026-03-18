@@ -2,7 +2,9 @@ package io.github.townyadvanced.flagwar.objects;
 
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.WorldCoord;
+import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -36,18 +38,25 @@ public record BattleRecord (
 )
 {
     public static BattleRecord of(Battle b) {
-        return new BattleRecord(
-            b.getContestedTown() == null ? "_" : b.getContestedTown().getName(),
-            b.getAttacker() == null ? "_" : b.getAttacker().getName(),
-            b.getDefender() == null ? "_" : b.getDefender().getName(),
-            b.getHomeBlock().getX(),
-            b.getHomeBlock().getZ(),
-            b.getStageStartTime(),
-            b.isCityState(),
-            b.getCurrentStage(),
-            b.getContestedTown().getWorld().getUID(),
-            BattleUtil.toWorldCoords(b.getInitialTownBlocks()),
-            b.getInitialMayor().getUUID()
-        );
+        try {
+            return new BattleRecord(
+                b.getContestedTown() == null ? "_" : b.getContestedTown().getName(),
+                b.getAttacker() == null ? "_" : b.getAttacker().getName(),
+                b.getDefender() == null ? "_" : b.getDefender().getName(),
+                b.getHomeBlockCoords().getX(),
+                b.getHomeBlockCoords().getZ(),
+                b.getStageStartTime(),
+                b.isCityState(),
+                b.getCurrentStage(),
+                b.getContestedTown().getWorld().getUID(),
+                BattleUtil.toWorldCoords(b.getInitialTownBlocks()),
+                b.getInitialMayor().getUUID()
+            );
+        } catch (Exception e)  {
+            JavaPlugin.getPlugin(FlagWar.class).getLogger().severe("Error while creating BattleRecord: " + e.getMessage()
+            + ". Ending battle...");
+            b.prematurelyEndBattle();
+            return null;
+        }
     }
 }

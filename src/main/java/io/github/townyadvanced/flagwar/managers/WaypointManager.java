@@ -35,11 +35,12 @@ public final class WaypointManager {
         this.SERVICE = Bukkit.getServer().getPluginManager().getPlugin("WayfinderAPI") != null ?
             JavaPlugin.getPlugin(WayfinderAPI.class).getWaypointService() :
             null;
-
     }
 
     public void createWaypoint(CellUnderAttack c) {
         if (isAPIUnavailable()) return;
+
+        try {
 
         SERVICE.createWaypoint(
             toKey(c.getNameOfFlagOwner()),
@@ -47,6 +48,9 @@ public final class WaypointManager {
             Color.RED,
             WaypointStyle.FLAG,
             1000); // hardcoded for now.
+        } catch (IllegalArgumentException e) {
+            LOGGER.warning(e.getMessage() + " The waypoint was not created.");
+        }
     }
 
     public void deleteWaypoint(String flagOwner) {

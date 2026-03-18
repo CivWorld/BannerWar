@@ -186,11 +186,18 @@ public class BattleListener implements Listener {
                 + " has begun its " + ChatColor.AQUA + "FLAG" + ChatColor.RESET + " state. Flags may now be placed!");
     }
 
+     @EventHandler
+     public void onPrematureEnd(BattlePrematureEndEvent event) {
+        Battle battle = event.getBattle();
+         Broadcasts.broadcastMessage("The battle at " + battle.getContestedTown().getName()
+             + " has prematurely ended!");
+     }
+
     @EventHandler
     public void onTownDisband(DeleteTownEvent e) {
         for (var b : BattleManager.getActiveBattles()) {
             if (!b.isActive()) continue;
-            if (b.getContestedTown().getName().equals(e.getTownName())) b.loseDefense();
+            if (b.getContestedTown().getName().equals(e.getTownName())) b.prematurelyEndBattle();
         }
     }
 
@@ -198,8 +205,8 @@ public class BattleListener implements Listener {
     public void onNationDisband(DeleteNationEvent e) {
         for (var b : BattleManager.getActiveBattles()) {
             if (!b.isActive()) continue;
-            if (b.getAttacker().getName().equals(e.getNationName())) b.winDefense();
-            if (b.getDefender().getName().equals(e.getNationName())) b.loseDefense();
+            if (b.getAttacker().getName().equals(e.getNationName())) b.prematurelyEndBattle();
+            if (b.getDefender().getName().equals(e.getNationName())) b.prematurelyEndBattle();
         }
     }
 
@@ -254,8 +261,8 @@ public class BattleListener implements Listener {
                 if (cell != null) {
                     Resident placer = TownyAPI.getInstance().getResident(cell.getNameOfFlagOwner());
 
-                    if ((adder.isAlliedWith(placer) || adder.getTownOrNull().getNationOrNull().equals(placer.getTownOrNull().getNationOrNull()))
-                        && (adder.isKing() || !adder.getNationRanks().isEmpty())) {
+                    if ((adder.isAlliedWith(placer) ||
+                        adder.getTownOrNull().getNationOrNull().equals(placer.getTownOrNull().getNationOrNull()))) {
 
                         ItemStack held = e.getPlayer().getInventory().getItemInMainHand();
 

@@ -166,7 +166,7 @@ public final class FlagWarConfig {
         String[] matArray = editableMaterials.split(",");
         List<String> list = Arrays.stream(matArray).toList();
         for (String material : list) {
-            if (material.equals("*")) {
+            if (material.equals("$")) {
                 allowedMaterials.addAll(Arrays.asList(Material.values()));
             } else if (material.startsWith("-")) {
                 allowedMaterials.remove(Material.matchMaterial(material));

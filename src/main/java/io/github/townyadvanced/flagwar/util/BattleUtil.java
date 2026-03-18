@@ -70,14 +70,18 @@ public final class BattleUtil {
 
         int size = b.getInitialTownBlocks().size();
 
-        stageTimes.put(BattleStage.PRE_FLAG, !b.isCityState() ? Duration.ofMinutes(Math.round(0.5*size*BannerWarConfig.getTimeMultiplier(BattleStage.PRE_FLAG)))
-            : Duration.ofSeconds(30));
+        stageTimes.put(BattleStage.PRE_FLAG, !b.isCityState() ? Duration.ofMinutes(Math.round(
+            30*BannerWarConfig.getTimeMultiplier(BattleStage.PRE_FLAG)
+        )) : Duration.ofMinutes(5));
 
-        stageTimes.put(BattleStage.FLAG, Duration.ofMinutes(Math.round(1.7*size*BannerWarConfig.getTimeMultiplier(BattleStage.FLAG))));
+        stageTimes.put(BattleStage.FLAG, Duration.ofMinutes(Math.round(
+            Math.max(5*Math.sqrt(size), 60) * BannerWarConfig.getTimeMultiplier(BattleStage.FLAG))));
 
-        stageTimes.put(BattleStage.RUINED, Duration.ofMinutes(Math.round(1.5*size*BannerWarConfig.getTimeMultiplier(BattleStage.RUINED))));
+        stageTimes.put(BattleStage.RUINED, Duration.ofMinutes(Math.round(
+            60 * BannerWarConfig.getTimeMultiplier(BattleStage.RUINED))));
 
-        stageTimes.put(BattleStage.DORMANT, Duration.ofDays((long) Math.ceil((size/15.0) * BannerWarConfig.getTimeMultiplier(BattleStage.DORMANT))));
+        stageTimes.put(BattleStage.DORMANT, Duration.ofDays((long) Math.ceil(
+            3 * BannerWarConfig.getTimeMultiplier(BattleStage.DORMANT))));
 
         return stageTimes;
     }

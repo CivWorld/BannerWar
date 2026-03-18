@@ -51,7 +51,6 @@ public final class DatabaseManager {
      */
     public DatabaseManager(JavaPlugin plugin) {
         this.PLUGIN = plugin;
-
         this.PATH = plugin.getDataFolder().toPath().resolve("BannerWarDatabase.db");
         try {init();} catch (SQLException e) {e.printStackTrace();}
     }
