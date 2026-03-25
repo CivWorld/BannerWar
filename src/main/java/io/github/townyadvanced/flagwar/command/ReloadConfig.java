@@ -28,7 +28,7 @@ public class ReloadConfig implements CommandExecutor {
             else {
                 try {
                     plugin.reloadConfig();
-                    Broadcasts.sendMessage(p, "BannerWar config reload successful!", ChatColor.GREEN);
+                    Broadcasts.sendMessage(p, "Config reload successful!", ChatColor.GREEN);
                 } catch (Exception e) {
                     Broadcasts.sendErrorMessage(p, "Failed to reload config! " + e.getMessage());
                 }
@@ -36,7 +36,7 @@ public class ReloadConfig implements CommandExecutor {
         } else if (commandSender instanceof ConsoleCommandSender) {
             try {
                 plugin.reloadConfig();
-                plugin.getLogger().info("BannerWar reload successful!");
+                plugin.getLogger().info("Config reload successful!");
             } catch (Exception e) {
                 e.printStackTrace();
             }

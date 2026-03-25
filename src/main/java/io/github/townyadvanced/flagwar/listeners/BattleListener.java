@@ -92,6 +92,12 @@ public class BattleListener implements Listener {
             return;
         }
 
+        if (r.getTownOrNull().getTownBlocks().isEmpty()) {
+            Broadcasts.sendErrorMessage(event.getPlayer(),  "You cannot attack another nation if your town has 0 claims!");
+            return;
+        }
+
+
         if (defender == null && battle == null) {
             Broadcasts.sendErrorMessage(event.getPlayer(), "This town is not part of a nation!");
             return;

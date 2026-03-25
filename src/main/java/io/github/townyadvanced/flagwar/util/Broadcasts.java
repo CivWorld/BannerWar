@@ -3,8 +3,17 @@ package io.github.townyadvanced.flagwar.util;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
 /** A class that contains various functions that prepares messages to be broadcast to one or all players. */
 public final class Broadcasts {
+
+    /** Holds a {@link Map} of every player's most recent message sent to prevent spamming. */
+    private static final Map<UUID, String> LAST_MESSAGES = new HashMap<>();
 
     /** Holds the BannerWar prefix used for in-server broadcasts. */
     private static final String PREFIX =
@@ -76,6 +85,10 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static void sendErrorMessage(Player p, String msg) {
-        p.sendMessage(prepareErrorMessage(msg));
+        String out = prepareErrorMessage(msg);
+        if (Objects.equals(out, LAST_MESSAGES.get(p.getUniqueId()))) return;
+
+        p.sendMessage(out);
+        LAST_MESSAGES.put(p.getUniqueId(), out);
     }
 }

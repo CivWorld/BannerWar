@@ -141,7 +141,7 @@ public class WearinessListener implements Listener {
             }
         }
         else if (CivicsUtil.getWearinessAsPercentage(n) >= threshold) {
-            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its nation's war weariness exceeds  " + threshold + "!"));
+            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot leave this town as its nation's war weariness exceeds " + threshold + "!"));
             e.setCancelled(true);
         }
     }
