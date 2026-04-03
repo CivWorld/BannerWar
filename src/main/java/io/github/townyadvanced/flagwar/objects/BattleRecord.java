@@ -53,7 +53,7 @@ public record BattleRecord (
                 b.getInitialMayor().getUUID()
             );
         } catch (Exception e)  {
-            JavaPlugin.getPlugin(FlagWar.class).getLogger().severe("Error while creating BattleRecord: " + e.getMessage()
+            FlagWar.getInstance().getLogger().severe("Error while creating BattleRecord: " + e.getMessage()
             + ". Ending battle...");
             b.prematurelyEndBattle();
             return null;

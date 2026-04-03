@@ -24,10 +24,8 @@ public final class WaypointManager {
     private WaypointService SERVICE;
 
     public WaypointManager(JavaPlugin plugin) {
-
         this.PLUGIN = plugin;
         LOGGER = plugin.getLogger();
-
         Bukkit.getScheduler().runTaskLater(PLUGIN, this::assignAPI, 1);
     }
 

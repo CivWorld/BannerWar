@@ -202,7 +202,7 @@ public class BattleListener implements Listener {
     @EventHandler
     public void onTownDisband(DeleteTownEvent e) {
         for (var b : BattleManager.getActiveBattles()) {
-            if (!b.isActive()) continue;
+            if (b.isInactive()) continue;
             if (b.getContestedTown().getName().equals(e.getTownName())) b.prematurelyEndBattle();
         }
     }
@@ -210,7 +210,7 @@ public class BattleListener implements Listener {
     @EventHandler
     public void onNationDisband(DeleteNationEvent e) {
         for (var b : BattleManager.getActiveBattles()) {
-            if (!b.isActive()) continue;
+            if (b.isInactive()) continue;
             if (b.getAttacker().getName().equals(e.getNationName())) b.prematurelyEndBattle();
             if (b.getDefender().getName().equals(e.getNationName())) b.prematurelyEndBattle();
         }

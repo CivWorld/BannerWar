@@ -2,13 +2,13 @@ package io.github.townyadvanced.flagwar.chunk;
 
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.Material;
-import org.bukkit.World;
+import io.github.townyadvanced.flagwar.util.Broadcasts;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -19,10 +19,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
@@ -45,14 +42,10 @@ public final class ChunkPaste {
     /** Holds the path of the chunk folder to store chunks in. */
     private final Path CHUNK_PATH;
 
-    /** Holds every {@link Material} that should not be restored. */
-    // private final Set<Material> BLACKLISTED_MATERIALS;
-
     public ChunkPaste(JavaPlugin plugin) {
         this.PLUGIN = plugin;
         this.LOGGER = plugin.getLogger();
         this.CHUNK_PATH = plugin.getDataFolder().toPath().resolve("chunks");
-        // BLACKLISTED_MATERIALS = BannerWarConfig.getBlacklistedMaterials();
     }
 
     /**
@@ -61,7 +54,8 @@ public final class ChunkPaste {
      * @param world the {@link World} where the chunks will be pasted
      */
     public void paste(Collection<Chunk> chunks, World world) {
-        paste(PersistentChunk.of(chunks), world, 10);
+        final int DEFAULT_BATCH_SIZE = 10;
+        paste(PersistentChunk.of(chunks), world, DEFAULT_BATCH_SIZE);
     }
 
     /**
@@ -135,13 +129,15 @@ public final class ChunkPaste {
 
     private void pasteToWorld(Deque<PersistentChunk> persistentChunksQueue, World world) {
 
+        final int CHUNKS_PER_TICK = 5;
         var blacklistedMaterials = BannerWarConfig.getBlacklistedMaterials();
 
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (int n = 0; n < 5; n++) {
+                for (int n = 0; n < CHUNKS_PER_TICK; n++) {
 
+                    Map<BlockData, Block> pendingPasteMap = new HashMap<>();
                     PersistentChunk pc;
 
                     if (!persistentChunksQueue.isEmpty()) pc = persistentChunksQueue.poll();
@@ -170,21 +166,43 @@ public final class ChunkPaste {
                             if (blacklistedMaterials.contains(newMat)) continue;
 
                             thisBlock.setType(newMat);
+                            if (newData != null) {
+                                BlockData data = Bukkit.createBlockData(newData);
 
-                            if (newData != null)
-                                thisBlock.setBlockData(Bukkit.createBlockData(newData));
+                                if (ChunkHelper.checkPasteBlock(thisBlock, data)) {
+                                    pendingPasteMap.put(data, thisBlock);
+                                }
+                            }
                         }
                     }
 
-                    for (var entity : thisChunk.getEntities())
-                        if (entity instanceof Item) entity.remove();
+                    for (var entity : thisChunk.getEntities()) {
+                        if (entity instanceof Item)
+                            entity.remove();
+
+                        else if (entity instanceof LivingEntity
+                            && ChunkHelper.checkUnSuffocate(entity)
+                            && entity instanceof Player p)
+                        {
+                            Broadcasts.sendMessage(p, "Teleported you to the top during chunk restoration!", ChatColor.YELLOW);
+                        }
+                    }
+
+                    for (var entry : pendingPasteMap.entrySet()) {
+                        BlockData blockData = entry.getKey();
+                        Block b = entry.getValue();
+
+                        b.setType(blockData.getMaterial());
+                        b.setBlockData(blockData, false);
+                        b.getState().update(false, true);
+                    }
                 }
             }
         }.runTaskTimer(PLUGIN, 0, 1);
     }
 
     private void deleteFiles(Collection<PersistentChunk> persistentChunks) {
-
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -192,7 +210,7 @@ public final class ChunkPaste {
      */
     public static ChunkPaste getInstance() {
         if (instance == null) {
-            instance = new ChunkPaste(JavaPlugin.getProvidingPlugin(FlagWar.class));
+            instance = new ChunkPaste(FlagWar.getFlagWar());
         }
         return instance;
     }

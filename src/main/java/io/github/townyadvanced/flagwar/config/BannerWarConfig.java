@@ -2,6 +2,7 @@ package io.github.townyadvanced.flagwar.config;
 
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.objects.BattleStage;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
 
@@ -247,5 +248,27 @@ public class BannerWarConfig {
 
 
         return out;
+    }
+
+    public static ChatColor getBracketColor() {
+        try {
+            return ChatColor.valueOf(PLUGIN.getConfig().getString("universe.bracket_color").toUpperCase(Locale.ROOT));
+        } catch (Exception e) {
+            PLUGIN.getLogger().warning("Could not find color for brackets! " + e.getMessage() + ". Will use DARK_PURPLE as a default.");
+            return ChatColor.DARK_PURPLE;
+        }
+    }
+
+    public static ChatColor getNameColor() {
+        try {
+            return ChatColor.valueOf(PLUGIN.getConfig().getString("universe.name_color").toUpperCase(Locale.ROOT));
+        } catch (Exception e) {
+            PLUGIN.getLogger().warning("Could not find color for name! " + e.getMessage() + ". Will use YELLOW as a default.");
+            return ChatColor.YELLOW;
+        }
+    }
+
+    public static String getBroadcasterName() {
+        return PLUGIN.getConfig().getString("universe.prefix_name");
     }
 }

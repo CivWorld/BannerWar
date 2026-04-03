@@ -185,6 +185,15 @@ universe:
         - gold_ore
         - gold_block
 
+    # The color of the bracket parts of the prefix used in server broadcasts. Case-insensitive.
+    bracket_color: DARK_PURPLE
+
+    # The color of the name part of the prefix used in server broadcasts. Case-insensitive.
+    name_color: LIGHT_PURPLE
+
+    # The name of the entity providing server broadcasts.
+    prefix_name: Battria
+
 # Define settings relating to battle features.
 battle:
 

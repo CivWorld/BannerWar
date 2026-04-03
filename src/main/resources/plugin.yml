@@ -30,14 +30,14 @@ depend:
 commands:
     StageAdvance:
         description: Advances the stage of a war. E.g. Pre-Flag --> Flag
-        usage: /<command> <TownName> OR /<command> <TownName> <isDefenderWinner>
+        usage: §cUsage - /<command> <TownName> OR /<command> <TownName> <isDefenderWinner>
         aliases:
             - PhaseAdvance
             - pa
             - sa
     BannerWarReload:
         description: Reloads the configuration file for BannerWar.
-        usage: /<command>
+        usage: §cUsage - /<command>
         aliases:
             - bwreload
             - bwr

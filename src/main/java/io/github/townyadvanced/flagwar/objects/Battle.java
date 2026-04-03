@@ -198,6 +198,11 @@ public class Battle {
         return out;
     }
 
+    /** Returns the {@link #INITIAL_TOWN_BLOCK_COORDS}. */
+    public Collection<WorldCoord> getInitialTownBlocksAsWorldCoords() {
+        return INITIAL_TOWN_BLOCK_COORDS;
+    }
+
     /** Returns the {@link Collection} of {@link TownBlock}s that have been captured by the {@link #ATTACKER} during the battle. */
     public Collection<TownBlock> getCapturedTownBlocks() {
         Collection<TownBlock> out = getInitialTownBlocks();
@@ -289,10 +294,10 @@ public class Battle {
     }
 
     /**
-     * Returns whether this {@link Battle} is in its {@link BattleStage#PRE_FLAG} or {@link BattleStage#FLAG} states.
+     * Returns whether this {@link Battle} is NOT in its {@link BattleStage#PRE_FLAG} or {@link BattleStage#FLAG} states.
      */
-    public boolean isActive() {
-        return getCurrentStage() == BattleStage.PRE_FLAG || isFlagging();
+    public boolean isInactive() {
+        return getCurrentStage() != BattleStage.PRE_FLAG && !isFlagging();
     }
 
     /**

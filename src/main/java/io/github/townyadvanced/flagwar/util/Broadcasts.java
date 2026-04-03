@@ -1,5 +1,6 @@
 package io.github.townyadvanced.flagwar.util;
 
+import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -15,14 +16,6 @@ public final class Broadcasts {
     /** Holds a {@link Map} of every player's most recent message sent to prevent spamming. */
     private static final Map<UUID, String> LAST_MESSAGES = new HashMap<>();
 
-    /** Holds the BannerWar prefix used for in-server broadcasts. */
-    private static final String PREFIX =
-        ChatColor.DARK_PURPLE + "[" + ChatColor.YELLOW + "BannerWar" + ChatColor.DARK_PURPLE + "] " + ChatColor.RESET;
-
-    /** Holds the BannerWar prefix used, without any color usage. */
-    private static final String PLAIN_PREFIX =
-         "[BannerWar]";
-
     private Broadcasts() {}
 
     /**
@@ -31,7 +24,7 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static void sendMessage(Player p, String msg) {
-       sendMessage(p, msg, ChatColor.RESET);
+        sendMessage(p, msg, ChatColor.RESET);
     }
 
     /**
@@ -41,7 +34,58 @@ public final class Broadcasts {
      * @param color the {@link ChatColor} that this message will be in
      */
     public static void sendMessage(Player p, String msg, ChatColor color) {
+        String out = prepareMessage(color + msg);
+        if (Objects.equals(out, LAST_MESSAGES.get(p.getUniqueId()))) return;
         p.sendMessage(prepareMessage(color + msg));
+        LAST_MESSAGES.put(p.getUniqueId(), out);
+    }
+
+    /**
+     * Sends a message to the specified {@link Player}, formatted for BannerWar.
+     * This message bypasses the repeated message filter that {@link #sendMessage(Player, String)} has.
+     * @param p the specified {@link Player}
+     * @param msg the message
+     */
+    public static void sendMessageNoFilter(Player p, String msg) {
+        sendMessageNoFilter(p, msg, ChatColor.RESET);
+    }
+
+    /**
+     * Sends a message to the specified {@link Player}, formatted for BannerWar.
+     * This message bypasses the repeated message filter that {@link #sendMessage(Player, String, ChatColor)} has.
+     * @param p the specified {@link Player}
+     * @param msg the message
+     * @param color the {@link ChatColor} that this message will be in
+     */
+    public static void sendMessageNoFilter(Player p, String msg, ChatColor color) {
+        p.sendMessage(prepareMessage(color + msg));
+    }
+
+    /**
+     * Sends an error message to the specified {@link Player}, formatted for BannerWar.
+     * <p>
+     * This message's purpose is to let a player know that an action has failed or been blocked by the server.
+     * @param p the specified {@link Player}
+     * @param msg the message
+     */
+    public static void sendErrorMessage(Player p, String msg) {
+        String out = prepareErrorMessage(msg);
+        if (Objects.equals(out, LAST_MESSAGES.get(p.getUniqueId()))) return;
+
+        p.sendMessage(out);
+        LAST_MESSAGES.put(p.getUniqueId(), out);
+    }
+
+    /**
+     * Sends an error message to the specified {@link Player}, formatted for BannerWar.
+     * This message bypasses the repeated message filter that {@link #sendErrorMessage(Player, String)} has.
+     * <p>
+     * This message's purpose is to let a player know that an action has failed or been blocked by the server.
+     * @param p the specified {@link Player}
+     * @param msg the message
+     */
+    public static void sendErrorMessageNoFilter(Player p, String msg) {
+        p.sendMessage(prepareErrorMessage(msg));
     }
 
     /**
@@ -57,7 +101,22 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static String prepareMessage(String msg) {
-        return PREFIX + msg;
+
+        StringBuilder out = new StringBuilder();
+
+        var parts = msg.split("\n");
+
+        out.append(buildPrefix(false)).append(parts[0]).append("\n");
+
+        if (parts.length < 2) return out.toString();
+
+        else {
+            for (int i = 1; i < parts.length; i++) {
+                out.append(BannerWarConfig.getBracketColor()).append("[] ").append(ChatColor.RESET).append(parts[i]).append("\n");
+            }
+        }
+
+        return out.toString();
     }
 
     /**
@@ -65,7 +124,7 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static String prepareErrorMessage(String msg) {
-        return PREFIX + ChatColor.RED + msg;
+        return buildPrefix(false) + ChatColor.RED + msg;
     }
 
     /**
@@ -73,22 +132,27 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static String prepareBroadcastMessage(String msg) {
-        return ChatColor.ITALIC + PREFIX + ChatColor.RESET + msg;
+        return buildPrefix(true) + ChatColor.RESET + msg;
     }
 
     /**
-     * Sends an error message to the specified {@link Player}, formatted for BannerWar.
-     * <p>
-     * This message's purpose is to let a player know that an action has failed or been blocked by the server, such
-     * as flagging a town that is not under a battle, or starting a battle on a peaceful nation.
-     * @param p the specified {@link Player}
-     * @param msg the message
+     * Builds and returns the prefix of the entity providing broadcasts.
+     * @param isServerBroadcast whether the prefix should be built to accommodate a server broadcast
      */
-    public static void sendErrorMessage(Player p, String msg) {
-        String out = prepareErrorMessage(msg);
-        if (Objects.equals(out, LAST_MESSAGES.get(p.getUniqueId()))) return;
+    private static String buildPrefix(boolean isServerBroadcast) {
+        final ChatColor NAME_COLOR = BannerWarConfig.getNameColor();
+        final ChatColor BRACKET_COLOR = BannerWarConfig.getBracketColor();
+        final String SERVER_PART = isServerBroadcast ? ChatColor.BOLD + "" : "";
+        final String NAME = BannerWarConfig.getBroadcasterName();
 
-        p.sendMessage(out);
-        LAST_MESSAGES.put(p.getUniqueId(), out);
+        return BRACKET_COLOR + SERVER_PART + "[" + NAME_COLOR + SERVER_PART +
+            NAME + BRACKET_COLOR + SERVER_PART + "] " + ChatColor.RESET;
+    }
+
+    /**
+     * Builds the prefix of the entity providing broadcasts, without any color usage.
+     */
+    private static String buildPlainPrefix() {
+        return "[" + BannerWarConfig.getBroadcasterName() + "]";
     }
 }
