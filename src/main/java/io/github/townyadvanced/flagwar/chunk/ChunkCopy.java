@@ -42,46 +42,59 @@ public final class ChunkCopy {
     }
 
     /**
-     * Copies the {@link Collection} of chunks as separate files to the chunk folder for later pasting.
+     * Copies the {@link Collection} of chunks as separate files to the chunk folder (by calling {@link #writeChunkToFile(ChunkSnapshot, String[], String[])} for later pasting.
      * @param chunks the {@link Collection} of chunks
      */
     public void copy(Collection<ChunkSnapshot> chunks) {
-
         for (var c : chunks) {
-
             String[] materials = new String[16 * 16 * 384];
             String[] blockDatas = new String[16 * 16 * 384];
 
-            for (int x = 0; x < 16; x++)
-                for (int z = 0; z < 16; z++)
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+
                     for (int y = -64; y < 320; y++) {
 
                         int ny = y + 64; // it's going to otherwise be out of bounds because y is negative
-                        BlockData d = c.getBlockData(x, y, z);
 
                         int i = x + (z * 16) + (ny * 16 * 16);
 
                         if (c.getBlockType(x, y, z) != Material.AIR) {
                             materials[i] = c.getBlockType(x, y, z).toString();
 
-                            if (ChunkHelper.isBlockDataUseful(d))
-                                blockDatas[i] = d.getAsString();
+                            BlockData d = c.getBlockData(x, y, z);
+
+                        if (ChunkHelper.isBlockDataUseful(d))
+                            blockDatas[i] = d.getAsString();
                         }
                     }
+                }
+            }
 
-            SCHEDULER.runTaskAsynchronously(PLUGIN, () -> {
-                File chunkFile = new File(CHUNK_PATH.resolve(Path.of(c.getX() + "_" + c.getZ())).toString());
-                chunkFile.getParentFile().mkdirs();
-
-                try (FileOutputStream fos = new FileOutputStream(chunkFile);
-                     ObjectOutputStream oos = new ObjectOutputStream(fos)) {
-
-                    oos.writeObject(materials);
-                    oos.writeObject(blockDatas);
-
-                } catch (IOException e) {LOGGER.warning(e.getMessage());}
-            });
+            writeChunkToFile(c, materials, blockDatas);
         }
+    }
+
+    /**
+     * Writes the chunk information of this chunk to its respective chunk file.
+     * @param c the chunk snapshot
+     * @param materials the material array
+     * @param blockDatas the block data array
+     */
+    private void writeChunkToFile(ChunkSnapshot c, String[] materials, String[] blockDatas) {
+        SCHEDULER.runTaskAsynchronously(PLUGIN, () -> {
+            String fileName = ChunkHelper.fileNamefrom(c.getX(), c.getZ());
+            File chunkFile = new File(CHUNK_PATH.resolve(Path.of(fileName)).toString());
+            chunkFile.getParentFile().mkdirs();
+
+            try (FileOutputStream fos = new FileOutputStream(chunkFile);
+                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+
+                oos.writeObject(materials);
+                oos.writeObject(blockDatas);
+
+            } catch (IOException e) {LOGGER.warning(e.getMessage());}
+        });
     }
 
     /**

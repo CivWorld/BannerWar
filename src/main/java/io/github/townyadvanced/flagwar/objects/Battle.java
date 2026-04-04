@@ -1,5 +1,6 @@
 package io.github.townyadvanced.flagwar.objects;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.object.*;
@@ -266,14 +267,17 @@ public class Battle {
     /**
      * Advances the stage of this battle to the next one.
      * @param winDefense whether the battle is to be won by the {@link #DEFENDER} if the next stage ends it.
+     * @return the new {@link BattleStage}
      */
-    public void advanceStage(boolean winDefense) {
+    @CanIgnoreReturnValue
+    public BattleStage advanceStage(boolean winDefense) {
         switch (stage) {
             case PRE_FLAG -> makeFlaggable();
             case FLAG -> { if (winDefense) winDefense(); else loseDefense(); }
             case RUINED -> unRuin();
             case DORMANT -> MANAGER.removeBattleAndDB(this);
         }
+        return getCurrentStage();
     }
 
     /**
@@ -298,6 +302,13 @@ public class Battle {
      */
     public boolean isInactive() {
         return getCurrentStage() != BattleStage.PRE_FLAG && !isFlagging();
+    }
+
+    /**
+     * Returns whether this {@link Battle} is in its {@link BattleStage#PRE_FLAG} or {@link BattleStage#FLAG} states.
+     */
+    public boolean isActive() {
+        return !isInactive();
     }
 
     /**

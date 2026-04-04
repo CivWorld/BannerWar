@@ -79,9 +79,9 @@ public final class ChunkPaste {
             future = future.thenCompose(v ->
                 readFromFile(batch)
                     .thenAcceptAsync(batchForPasting ->
-                            pasteToWorld(batchForPasting, world),
-                        runnable -> SCHEDULER.runTask(PLUGIN, runnable)
-                    )
+                        pasteToWorld(batchForPasting, world)
+                        .thenAccept(this::deleteFiles),
+                    runnable -> SCHEDULER.runTask(PLUGIN, runnable))
             );
         } while (!persistentChunksQueue.isEmpty());
     }
@@ -99,8 +99,9 @@ public final class ChunkPaste {
                 PersistentChunk pc = persistentChunksQueue.poll();
                 if (pc == null) break;
 
+                String fileName = ChunkHelper.fileNamefrom(pc.getX(), pc.getZ());
                 File chunkFile = new File(
-                    CHUNK_PATH.resolve(Path.of(pc.getX() + "_" + pc.getZ())).toString()
+                    CHUNK_PATH.resolve(Path.of(fileName)).toString()
                 );
 
                 if (!chunkFile.exists()) continue;
@@ -114,12 +115,6 @@ public final class ChunkPaste {
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                } finally {
-                    try {
-                        Files.deleteIfExists(chunkFile.toPath());
-                    } catch (IOException e) {
-                        LOGGER.warning("Could not delete chunk file for chunk " + chunkFile.getName() + "!" + e.getMessage());
-                    }
                 }
             }
 
@@ -127,7 +122,11 @@ public final class ChunkPaste {
         });
     }
 
-    private void pasteToWorld(Deque<PersistentChunk> persistentChunksQueue, World world) {
+    private CompletableFuture<Collection<PersistentChunk>>
+        pasteToWorld(Deque<PersistentChunk> persistentChunksQueue, World world) {
+
+        var CF = new CompletableFuture<Collection<PersistentChunk>>();
+        var modifiableQueue = new ArrayDeque<>(persistentChunksQueue);
 
         final int CHUNKS_PER_TICK = 5;
         var blacklistedMaterials = BannerWarConfig.getBlacklistedMaterials();
@@ -139,8 +138,11 @@ public final class ChunkPaste {
 
                     PersistentChunk pc;
 
-                    if (!persistentChunksQueue.isEmpty()) pc = persistentChunksQueue.poll();
-                    else {cancel(); return;}
+                    if (!modifiableQueue.isEmpty()) pc = modifiableQueue.poll();
+                    else {
+                        CF.complete(persistentChunksQueue);
+                        cancel(); return;
+                    }
 
                     if (pc.isUseless()) {
                         LOGGER.warning("Chunk " + pc.getX() + " " + pc.getZ() + " has no information!");
@@ -160,16 +162,8 @@ public final class ChunkPaste {
                         Material newMat = Material.getMaterial(pc.getMaterials()[i]);
                         String newData = pc.getBlockData()[i];
 
-                        if (newMat == null) thisBlock.setType(Material.AIR, false);
-                        else {
-                            if (blacklistedMaterials.contains(newMat)) continue;
-
-                            thisBlock.setType(newMat, false);
-                            if (newData != null) {
-                                BlockData data = Bukkit.createBlockData(newData);
-                                thisBlock.setBlockData(data, false);
-                            }
-                        }
+                        if (blacklistedMaterials.contains(newMat)) continue;
+                        ChunkHelper.restoreBlock(thisBlock, newMat, newData);
                     }
 
                     for (var entity : thisChunk.getEntities()) {
@@ -187,10 +181,18 @@ public final class ChunkPaste {
                 }
             }
         }.runTaskTimer(PLUGIN, 0, 1);
+        return CF;
     }
 
     private void deleteFiles(Collection<PersistentChunk> persistentChunks) {
-        throw new UnsupportedOperationException();
+        try {
+            for (PersistentChunk pc : persistentChunks) {
+                String fileName = ChunkHelper.fileNamefrom(pc.getX(), pc.getZ());
+                Files.deleteIfExists(CHUNK_PATH.resolve(Path.of(fileName)));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

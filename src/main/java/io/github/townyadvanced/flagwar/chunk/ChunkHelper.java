@@ -1,7 +1,10 @@
 package io.github.townyadvanced.flagwar.chunk;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.data.*;
 import org.bukkit.entity.Entity;
 
@@ -56,5 +59,36 @@ final class ChunkHelper {
             || d instanceof FaceAttachable
             || d instanceof Hangable
             || d instanceof Snowable;
+    }
+
+    /**
+     * Checks if the block has changed between the copying and pasting phase, and restores it if so.
+     * @param block the block
+     * @param mat the material to be restored
+     * @param data the block data to be restored
+     */
+    static void restoreBlock(Block block, Material mat, String data) {
+        if (mat == null) block.setType(Material.AIR, false);
+        else {
+
+            if (!block.getType().equals(mat))
+                block.setType(mat, false);
+
+            if (data != null) {
+                BlockData bData = Bukkit.createBlockData(data);
+
+                if (bData.equals(block.getBlockData()))
+                    block.setBlockData(bData, false);
+            }
+        }
+    }
+
+    /**
+     * Determines and returns a file name, based on a chunk's X-Z coordinates.
+     * @param x the X coordinate
+     * @param z the Z coordinate
+     */
+    static String fileNamefrom(int x, int z) {
+        return x + "_" + z;
     }
 }

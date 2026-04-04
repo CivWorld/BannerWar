@@ -1,6 +1,7 @@
 package io.github.townyadvanced.flagwar.command;
 
 import io.github.townyadvanced.flagwar.BannerWarAPI;
+import io.github.townyadvanced.flagwar.objects.BattleStage;
 import io.github.townyadvanced.flagwar.util.Broadcasts;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -31,24 +32,24 @@ public class StageAdvance implements CommandExecutor {
 
         if (commandSender instanceof Player p) {
             if (!p.isOp()) {
-                Broadcasts.sendMessage(p, ChatColor.RED + "You do not have permission to execute this command.");
+                Broadcasts.sendErrorMessage(p, "You do not have permission to execute this command.");
                 return true;
             }
 
             else if (BannerWarAPI.getBattle(townName) != null) {
-                BannerWarAPI.getBattle(townName).advanceStage(toWin);
-                Broadcasts.sendMessage(p, "Advanced stage for " + townName + "!", ChatColor.GREEN);
+                BattleStage newStage = BannerWarAPI.getBattle(townName).advanceStage(toWin);
+                Broadcasts.sendMessageNoFilter(p, "Advanced stage for " + townName + " to " + newStage.name() + "!", ChatColor.GREEN);
             }
             else {
-                Broadcasts.sendMessage(p, ChatColor.RED + townName + " is not in a battle or does not exist!");
+                Broadcasts.sendErrorMessageNoFilter(p, townName + " is not in a battle or does not exist!");
                 return true;
             }
         }
 
         else {
             if (BannerWarAPI.getBattle(townName) != null) {
-                BannerWarAPI.getBattle(townName).advanceStage(toWin);
-                PLUGIN.getLogger().info("Advanced stage for " + townName + "!");
+                BattleStage newStage = BannerWarAPI.getBattle(townName).advanceStage(toWin);
+                PLUGIN.getLogger().info("Advanced stage for " + townName + " to " + newStage.name() + "!");
             }
             else {
                 PLUGIN.getLogger().warning(townName + " is not in a battle or does not exist!");
