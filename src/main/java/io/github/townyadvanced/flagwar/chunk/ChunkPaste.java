@@ -137,7 +137,6 @@ public final class ChunkPaste {
             public void run() {
                 for (int n = 0; n < CHUNKS_PER_TICK; n++) {
 
-                    Map<BlockData, Block> pendingPasteMap = new HashMap<>();
                     PersistentChunk pc;
 
                     if (!persistentChunksQueue.isEmpty()) pc = persistentChunksQueue.poll();
@@ -160,18 +159,15 @@ public final class ChunkPaste {
 
                         Material newMat = Material.getMaterial(pc.getMaterials()[i]);
                         String newData = pc.getBlockData()[i];
-                        if (newMat == null) thisBlock.setType(Material.AIR);
 
+                        if (newMat == null) thisBlock.setType(Material.AIR, false);
                         else {
                             if (blacklistedMaterials.contains(newMat)) continue;
 
-                            thisBlock.setType(newMat);
+                            thisBlock.setType(newMat, false);
                             if (newData != null) {
                                 BlockData data = Bukkit.createBlockData(newData);
-
-                                if (ChunkHelper.checkPasteBlock(thisBlock, data)) {
-                                    pendingPasteMap.put(data, thisBlock);
-                                }
+                                thisBlock.setBlockData(data, false);
                             }
                         }
                     }
@@ -184,17 +180,9 @@ public final class ChunkPaste {
                             && ChunkHelper.checkUnSuffocate(entity)
                             && entity instanceof Player p)
                         {
-                            Broadcasts.sendMessage(p, "Teleported you to the top during chunk restoration!", ChatColor.YELLOW);
+                            Broadcasts.sendMessage(p,
+                                "Teleported you to the top during chunk restoration!", ChatColor.YELLOW);
                         }
-                    }
-
-                    for (var entry : pendingPasteMap.entrySet()) {
-                        BlockData blockData = entry.getKey();
-                        Block b = entry.getValue();
-
-                        b.setType(blockData.getMaterial());
-                        b.setBlockData(blockData, false);
-                        b.getState().update(false, true);
                     }
                 }
             }

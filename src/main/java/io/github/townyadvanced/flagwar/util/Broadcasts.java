@@ -1,5 +1,6 @@
 package io.github.townyadvanced.flagwar.util;
 
+import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -34,10 +35,13 @@ public final class Broadcasts {
      * @param color the {@link ChatColor} that this message will be in
      */
     public static void sendMessage(Player p, String msg, ChatColor color) {
-        String out = prepareMessage(color + msg);
-        if (Objects.equals(out, LAST_MESSAGES.get(p.getUniqueId()))) return;
-        p.sendMessage(prepareMessage(color + msg));
-        LAST_MESSAGES.put(p.getUniqueId(), out);
+        String formatted = prepareMessage(color + msg);
+        UUID id = p.getUniqueId();
+
+        if (Objects.equals(formatted, LAST_MESSAGES.get(id))) return;
+        p.sendMessage(formatted);
+        LAST_MESSAGES.put(id, formatted);
+        resetLastMessage(id);
     }
 
     /**
@@ -58,7 +62,12 @@ public final class Broadcasts {
      * @param color the {@link ChatColor} that this message will be in
      */
     public static void sendMessageNoFilter(Player p, String msg, ChatColor color) {
-        p.sendMessage(prepareMessage(color + msg));
+        String formatted = prepareMessage(color + msg);
+        UUID id =  p.getUniqueId();
+
+        p.sendMessage(formatted);
+        LAST_MESSAGES.put(id, formatted);
+        resetLastMessage(id);
     }
 
     /**
@@ -69,11 +78,14 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static void sendErrorMessage(Player p, String msg) {
-        String out = prepareErrorMessage(msg);
-        if (Objects.equals(out, LAST_MESSAGES.get(p.getUniqueId()))) return;
+        String formatted = prepareErrorMessage(msg);
+        UUID id = p.getUniqueId();
 
-        p.sendMessage(out);
-        LAST_MESSAGES.put(p.getUniqueId(), out);
+        if (Objects.equals(formatted, LAST_MESSAGES.get(id))) return;
+
+        p.sendMessage(formatted);
+        LAST_MESSAGES.put(id, formatted);
+        resetLastMessage(id);
     }
 
     /**
@@ -85,7 +97,12 @@ public final class Broadcasts {
      * @param msg the message
      */
     public static void sendErrorMessageNoFilter(Player p, String msg) {
-        p.sendMessage(prepareErrorMessage(msg));
+        String formatted = prepareErrorMessage(msg);
+        UUID id = p.getUniqueId();
+
+        p.sendMessage(formatted);
+        LAST_MESSAGES.put(id, formatted);
+        resetLastMessage(id);
     }
 
     /**
@@ -145,8 +162,10 @@ public final class Broadcasts {
         final String SERVER_PART = isServerBroadcast ? ChatColor.BOLD + "" : "";
         final String NAME = BannerWarConfig.getBroadcasterName();
 
-        return BRACKET_COLOR + SERVER_PART + "[" + NAME_COLOR + SERVER_PART +
-            NAME + BRACKET_COLOR + SERVER_PART + "] " + ChatColor.RESET;
+        return BRACKET_COLOR + SERVER_PART + "["
+            + NAME_COLOR + SERVER_PART + NAME
+            + BRACKET_COLOR + SERVER_PART + "] "
+            + ChatColor.RESET;
     }
 
     /**
@@ -154,5 +173,13 @@ public final class Broadcasts {
      */
     private static String buildPlainPrefix() {
         return "[" + BannerWarConfig.getBroadcasterName() + "]";
+    }
+
+    /**
+     * Resets the {@link #LAST_MESSAGES} value of the specified key in an amount of time.
+     * @param id the specified key
+     */
+    private static void resetLastMessage(UUID id) {
+        Bukkit.getScheduler().runTaskLater(FlagWar.getInstance(), () -> LAST_MESSAGES.remove(id), 100);
     }
 }

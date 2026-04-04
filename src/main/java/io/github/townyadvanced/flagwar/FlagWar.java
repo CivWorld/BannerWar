@@ -285,7 +285,7 @@ public class FlagWar extends JavaPlugin {
         flagWarEntityListener = new FlagWarEntityListener();
         warzoneListener = new WarzoneListener();
         outlawListener = new OutlawListener();
-        battleListener = new BattleListener(this, battleManager);
+        battleListener = new BattleListener(battleManager);
         wearinessListener = new WearinessListener(this, battleManager);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialized"));
     }

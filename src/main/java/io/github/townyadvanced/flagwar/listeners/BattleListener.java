@@ -1,5 +1,6 @@
 package io.github.townyadvanced.flagwar.listeners;
 
+import com.google.common.base.Objects;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.event.DeleteNationEvent;
 import com.palmergames.bukkit.towny.event.DeleteTownEvent;
@@ -32,9 +33,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class BattleListener implements Listener {
 
-    /** Holds the {@link JavaPlugin} instance. */
-    private final JavaPlugin PLUGIN;
-
     /** Holds the {@link BattleManager} instance. */
     private final BattleManager BATTLE_MANAGER;
 
@@ -42,8 +40,7 @@ public class BattleListener implements Listener {
     private static final String PLAYERS_ONLINE_ERROR =
         "There must be a minimum of %s online in %s for a battle to occur!";
 
-    public BattleListener(final JavaPlugin plugin, final BattleManager manager) {
-        this.PLUGIN = plugin;
+    public BattleListener(final BattleManager manager) {
         this.BATTLE_MANAGER = manager;
     }
 
@@ -103,6 +100,11 @@ public class BattleListener implements Listener {
             return;
         }
 
+        if (!town.hasHomeBlock() || Objects.equal(town.getHomeBlockOrNull(), null)) {
+            Broadcasts.sendErrorMessage(event.getPlayer(), "A town with no home block is a town not worth attacking!");
+            return;
+        }
+
 
         if (defender != null && defender.isNeutral()) {
             Broadcasts.sendErrorMessage(event.getPlayer(), "You cannot attack a peaceful nation!");
@@ -147,11 +149,6 @@ public class BattleListener implements Listener {
 
         if (onlineResidents < minOnInAttackerTown) {
             Broadcasts.sendErrorMessage(event.getPlayer(), String.format(PLAYERS_ONLINE_ERROR, FormatUtil.tryGetPlural("player", minOnInAttackerTown), r.getTownOrNull().getName()));
-            return;
-        }
-
-        if (!town.hasHomeBlock()) {
-            Broadcasts.sendErrorMessage(event.getPlayer(), "This town does not contain a home block!");
             return;
         }
 

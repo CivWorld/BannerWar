@@ -2,39 +2,11 @@ package io.github.townyadvanced.flagwar.chunk;
 
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.data.*;
-import org.bukkit.block.data.type.Bed;
 import org.bukkit.entity.Entity;
 
 final class ChunkHelper {
     private ChunkHelper() {}
-
-    /**
-     * Pastes the new {@link BlockData} to the block provided,
-     * updating physics if the block is not a {@link Bisected} or a {@link Bed}.
-     * @param b the block
-     * @param blockData the block data
-     * @return true if it is a {@link Bed.Part#FOOT} or a {@link Bisected.Half#BOTTOM}
-     */
-    static boolean checkPasteBlock(Block b, BlockData blockData) {
-        if (blockData instanceof Bisected bct) {
-            if (bct.getHalf() == Bisected.Half.BOTTOM) return true;
-            else b.setBlockData(blockData, false);
-            return false;
-        }
-
-        else if  (blockData instanceof Bed bed) {
-            if (bed.getPart() == Bed.Part.FOOT) return true;
-            else b.setBlockData(blockData, false);
-            return false;
-        }
-
-        else {
-            b.setBlockData(blockData);
-            return false;
-        }
-    }
 
     /**
      * Checks if an entity's eye level is in a block (it is likely suffocating in said block),
@@ -77,6 +49,12 @@ final class ChunkHelper {
             || d instanceof Lightable
             || d instanceof Levelled
             || d instanceof Rotatable
-            || d instanceof MultipleFacing;
+            || d instanceof MultipleFacing
+            || d instanceof Orientable
+            || d instanceof AnaloguePowerable
+            || d instanceof Attachable
+            || d instanceof FaceAttachable
+            || d instanceof Hangable
+            || d instanceof Snowable;
     }
 }

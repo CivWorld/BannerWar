@@ -28,9 +28,9 @@ public class ReloadConfig implements CommandExecutor {
             else {
                 try {
                     plugin.reloadConfig();
-                    Broadcasts.sendMessage(p, "Config reload successful!", ChatColor.GREEN);
+                    Broadcasts.sendMessageNoFilter(p, "Config reload successful!", ChatColor.GREEN);
                 } catch (Exception e) {
-                    Broadcasts.sendErrorMessage(p, "Failed to reload config! " + e.getMessage());
+                    Broadcasts.sendErrorMessageNoFilter(p, "Failed to reload config! " + e.getMessage());
                 }
             }
         } else if (commandSender instanceof ConsoleCommandSender) {
