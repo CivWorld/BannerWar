@@ -17,5 +17,8 @@ public enum BattleStage {
     RUINED,
 
     /** The battle has effectively ended, and the town cannot be attacked again until it leaves this dormant stage. */
-    DORMANT
+    DORMANT,
+
+    /** The battle is out of its dormant stage; BannerWar is no longer keeping track of this town, and it can be attacked again. */
+    END
 }

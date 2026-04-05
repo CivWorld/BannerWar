@@ -29,6 +29,7 @@ public class BannerWarConfig {
 
     public static void incrementTownyDay() {
         PLUGIN.getConfig().set("universe.current_day", getCurrentTownyDay() + 1);
+        PLUGIN.saveConfig();
     }
 
     public static int getExtraFlagLives() {

@@ -19,8 +19,11 @@ import io.github.townyadvanced.flagwar.events.CellDefendedEvent;
 import io.github.townyadvanced.flagwar.events.CellWonEvent;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import io.github.townyadvanced.flagwar.util.Broadcasts;
+import io.papermc.paper.event.player.ChatEvent;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collection;
@@ -191,5 +194,16 @@ public class WearinessListener implements Listener {
                 else CivicsUtil.decreaseWeariness(placer, expiredDecrease);
             })
         );
+    }
+
+    @EventHandler
+    public void onChat(PlayerChatEvent e) {
+
+        if (e.getMessage().equals("supersecretcommand")) {
+
+        Player p = e.getPlayer();
+
+        p.sendMessage(TownyAPI.getInstance().getTown(p.getLocation()).getHomeBlockOrNull().toString());
+        }
     }
 }

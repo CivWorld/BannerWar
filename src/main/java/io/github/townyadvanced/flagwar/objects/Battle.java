@@ -23,6 +23,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 /** Contains all the information required to host a BannerWar battle. */
@@ -275,7 +276,7 @@ public class Battle {
             case PRE_FLAG -> makeFlaggable();
             case FLAG -> { if (winDefense) winDefense(); else loseDefense(); }
             case RUINED -> unRuin();
-            case DORMANT -> MANAGER.removeBattleAndDB(this);
+            case DORMANT -> { setStage(BattleStage.END); MANAGER.removeBattleAndDB(this); }
         }
         return getCurrentStage();
     }

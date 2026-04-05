@@ -60,6 +60,7 @@ import java.io.IOException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -196,10 +197,15 @@ public class FlagWar extends JavaPlugin {
     @Override
     public void onDisable() {
         FW_LOGGER.log(Level.INFO, () -> Translate.from("shutdown.cancel-all"));
-
         battleClock.kill();
         BattleManager.deleteBossBars();
         CivicsUtil.unRegisterCivTechs();
+
+        try {
+            databaseManager.shutdown();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
 
         if (!ATTACK_HASH_MAP.isEmpty()) {
             for (CellUnderAttack cell : new ArrayList<>(ATTACK_HASH_MAP.values())) {
