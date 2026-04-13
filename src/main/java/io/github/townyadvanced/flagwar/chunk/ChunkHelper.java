@@ -1,12 +1,10 @@
 package io.github.townyadvanced.flagwar.chunk;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.*;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 
 final class ChunkHelper {
     private ChunkHelper() {}
@@ -90,5 +88,16 @@ final class ChunkHelper {
      */
     static String fileNamefrom(int x, int z) {
         return x + "_" + z;
+    }
+
+    /**
+     * Removes every entity that is an instance of {@link Item} in the specified chunk by calling {@link Entity#remove()}.
+     * @param chunk the specified chunk
+     */
+    static void destroyItemsAt(Chunk chunk) {
+        for (var entity : chunk.getEntities()) {
+            if (entity instanceof Item)
+                entity.remove();
+        }
     }
 }

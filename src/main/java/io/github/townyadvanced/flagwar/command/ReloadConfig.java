@@ -13,10 +13,10 @@ import org.jetbrains.annotations.NotNull;
 public class ReloadConfig implements CommandExecutor {
 
     /** Holds the {@link Plugin} instance. */
-    private final Plugin plugin;
+    private final Plugin PLUGIN;
 
     public ReloadConfig(Plugin plugin) {
-        this.plugin = plugin;
+        this.PLUGIN = plugin;
     }
 
     @Override
@@ -27,7 +27,7 @@ public class ReloadConfig implements CommandExecutor {
                 Broadcasts.sendErrorMessage(p, "You do not have permission to execute this command.");
             else {
                 try {
-                    plugin.reloadConfig();
+                    PLUGIN.reloadConfig();
                     Broadcasts.sendMessageNoFilter(p, "Config reload successful!", ChatColor.GREEN);
                 } catch (Exception e) {
                     Broadcasts.sendErrorMessageNoFilter(p, "Failed to reload config! " + e.getMessage());
@@ -35,8 +35,8 @@ public class ReloadConfig implements CommandExecutor {
             }
         } else if (commandSender instanceof ConsoleCommandSender) {
             try {
-                plugin.reloadConfig();
-                plugin.getLogger().info("Config reload successful!");
+                PLUGIN.reloadConfig();
+                PLUGIN.getLogger().info("Config reload successful!");
             } catch (Exception e) {
                 e.printStackTrace();
             }

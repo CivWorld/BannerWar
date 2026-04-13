@@ -1,6 +1,7 @@
 package io.github.townyadvanced.flagwar.chunk;
 
 import org.bukkit.Chunk;
+import org.bukkit.World;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,6 +10,13 @@ import java.util.Collection;
 /**
  * An object of this class contains enough information to be utilized by {@link ChunkCopy} and {@link ChunkPaste}
  * to copy, store, and paste a snapshot of the {@link Chunk} it represents.
+ * <p>
+ * A {@link PersistentChunk} holds 5 pieces of information, which are as follows: <br>
+ * - The X coordinate of its chunk, <br>
+ * - the Z coordinate of its chunk, <br>
+ * - the name of the {@link World} that it represents, <br>
+ * - an array for the material of every block within this chunk, and <br>
+ * - an array for the block data of every block within this chunk.
  * <p>
  * A {@link PersistentChunk} can be one of two types: useless or useful. It does not permanently remain of a type; it can cycle between the two.
  * <p>
@@ -24,12 +32,13 @@ import java.util.Collection;
  * This is because, due to optimizations, they store null {@link #materials} and {@link #blockData}.
  * This fits the conditions set by {@link #isUseless()}, resulting in a {@code true} result.
  */
-public class PersistentChunk {
+class PersistentChunk {
 
     private String[] materials;
     private String[] blockData;
     private final int X;
     private final int Z;
+    private final String WORLD_NAME;
 
     /**
      * Constructs a new {@link PersistentChunk} for chunk persistence.
@@ -38,20 +47,22 @@ public class PersistentChunk {
      * @param mats the {@link PersistentChunk}'s materials.
      * @param bds the {@link PersistentChunk}'s block data.
      */
-    PersistentChunk(String[] mats, String[] bds, int X, int Z) {
+    PersistentChunk(String[] mats, String[] bds, int X, int Z, String worldName) {
         materials = mats;
         blockData = bds;
         this.X = X;
         this.Z = Z;
+        this.WORLD_NAME = worldName;
     }
 
     /**
      * Constructs a new {@link PersistentChunk}, where {@link #isUseless()} returns true.
      * @param X the {@link PersistentChunk}'s X coordinate
      * @param Z the {@link PersistentChunk}'s Z coordinate
+     * @param worldName the {@link PersistentChunk}'s {@link World}'s name.
      */
-    PersistentChunk(int X, int Z) {
-        this(null, null, X, Z);
+    PersistentChunk(int X, int Z, String worldName) {
+        this(null, null, X, Z, worldName);
     }
 
     /**
@@ -63,6 +74,11 @@ public class PersistentChunk {
      * Returns the Z coordinate of the {@link PersistentChunk}.
      */
     public int getZ() {return Z;}
+
+    /**
+     * Returns the name of the world that this {@link PersistentChunk} resides in.
+     */
+    public String getWorldName() {return WORLD_NAME;}
 
     /**
      * Returns a {@link String} array of the materials of the {@link PersistentChunk}.
@@ -97,7 +113,7 @@ public class PersistentChunk {
      * @param chunk the {@link Chunk}
      */
     public static PersistentChunk of(Chunk chunk) {
-        return new PersistentChunk(chunk.getX(), chunk.getZ());
+        return new PersistentChunk(chunk.getX(), chunk.getZ(), chunk.getWorld().getName());
     }
 
     /**

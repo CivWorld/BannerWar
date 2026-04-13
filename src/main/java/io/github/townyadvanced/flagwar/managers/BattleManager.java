@@ -81,7 +81,7 @@ public final class BattleManager {
     }
 
     /**
-     * Refreshes the battles' states, and saves them to the database.
+     * Refreshes the battles' states, waypoints, and saves them to the database.
      */
     public void updateBattles() {
 
