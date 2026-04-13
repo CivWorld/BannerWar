@@ -146,6 +146,7 @@ public class Cell {
         if (!(obj instanceof Cell that)) {
             return false;
         }
+
         return xVal == that.xVal && zVal == that.zVal && (Objects.equals(this.cellsWorldName, that.cellsWorldName));
     }
 

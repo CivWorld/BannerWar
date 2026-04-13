@@ -101,7 +101,7 @@ public final class BannerWarAPI {
      * @param r the {@link Resident}
      * @param battle the {@link Battle}
      */
-    public static boolean isAssociatedWithAttacker(Resident r,  Battle battle) {
+    public static boolean isAssociatedWithAttacker(Resident r, Battle battle) {
         return isAssociatedWithNation(r, battle.getAttacker());
     }
 
@@ -110,7 +110,7 @@ public final class BannerWarAPI {
      * @param r the {@link Resident}
      * @param battle the {@link Battle}
      */
-    public static boolean isAssociatedWithDefender(Resident r,  Battle battle) {
+    public static boolean isAssociatedWithDefender(Resident r, Battle battle) {
         return isAssociatedWithNation(r, battle.getDefender());
     }
 
@@ -119,7 +119,7 @@ public final class BannerWarAPI {
      * @param r the {@link Resident}'s name
      * @param battle the {@link Battle}
      */
-    public static boolean isAssociatedWithDefender(String r,  Battle battle) {
+    public static boolean isAssociatedWithDefender(String r, Battle battle) {
         return isAssociatedWithDefender(TownyAPI.getInstance().getResident(r), battle);
     }
 
@@ -128,7 +128,7 @@ public final class BannerWarAPI {
      * @param r the {@link Resident}'s name
      * @param battle the {@link Battle}
      */
-    public static boolean isAssociatedWithAttacker(String r,  Battle battle) {
+    public static boolean isAssociatedWithAttacker(String r, Battle battle) {
         return isAssociatedWithAttacker(TownyAPI.getInstance().getResident(r), battle);
     }
 
@@ -137,7 +137,7 @@ public final class BannerWarAPI {
      * @param r the {@link Resident}
      * @param battle the {@link Battle}
      */
-    public static boolean isAssociatedWithBattle(Resident r,  Battle battle) {
+    public static boolean isAssociatedWithBattle(Resident r, Battle battle) {
         return isAssociatedWithAttacker(r, battle) || isAssociatedWithDefender(r, battle);
     }
 
@@ -180,8 +180,6 @@ public final class BannerWarAPI {
      * @param battle the battle
      */
     public static CompletableFuture<Collection<Player>> getAssociatedNonBots(Battle battle) {
-
-
         return CompletableFuture.supplyAsync(() -> {
         Collection<Player> out = getAssociatedPlayers(battle);
             getAllBots().thenAccept(out::removeAll);
@@ -212,9 +210,6 @@ public final class BannerWarAPI {
     public static CompletableFuture<Collection<Player>> getAllBots() {
 
         if (Bukkit.getServer().getPluginManager().getPlugin("townyAI") == null) {
-            // JavaPlugin.getProvidingPlugin(FlagWar.class).getLogger().warning("Plugin 'townyAI' does not exist! Returning empty collection!");
-
-
             return CompletableFuture.completedFuture(new ArrayList<>());
         }
 
