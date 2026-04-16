@@ -4,8 +4,6 @@ import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import java.util.Collection;
 import java.util.UUID;
 

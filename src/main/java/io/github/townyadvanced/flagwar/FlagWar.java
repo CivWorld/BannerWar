@@ -35,6 +35,7 @@ import com.palmergames.bukkit.towny.scheduling.impl.FoliaTaskScheduler;
 import com.palmergames.bukkit.towny.utils.AreaSelectionUtil;
 import com.palmergames.bukkit.util.Version;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattle;
 import io.github.townyadvanced.flagwar.command.ReloadConfig;
 import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
@@ -42,7 +43,7 @@ import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.database.DatabaseManager;
-import io.github.townyadvanced.flagwar.database.DatabaseInteraction;
+import io.github.townyadvanced.flagwar.database.BattleDatabase;
 import io.github.townyadvanced.flagwar.events.CellAttackCanceledEvent;
 import io.github.townyadvanced.flagwar.events.CellAttackEvent;
 import io.github.townyadvanced.flagwar.events.CellDefendedEvent;
@@ -137,8 +138,8 @@ public class FlagWar extends JavaPlugin {
     private WearinessListener wearinessListener;
     /** Holds instance of the {@link DatabaseManager}. */
     private DatabaseManager databaseManager;
-    /** Holds instance of the {@link DatabaseInteraction}. */
-    private DatabaseInteraction databaseInteraction;
+    /** Holds instance of the {@link BattleDatabase}. */
+    private BattleDatabase databaseInteraction;
     /** Holds instance of the {@link io.github.townyadvanced.flagwar.managers.BattleClock}. */
     private io.github.townyadvanced.flagwar.managers.BattleClock battleClock;
     /** Holds instance of the {@link BattleManager}. */
@@ -174,6 +175,7 @@ public class FlagWar extends JavaPlugin {
 
             new TownyAdminReloadAddon();
             getCommands();
+            TrackedBattle.start();
         }
     }
 
@@ -214,6 +216,7 @@ public class FlagWar extends JavaPlugin {
         }
 
         deleteAllWayPoints();
+        TrackedBattle.stop();
     }
 
     private void getCommands() {
@@ -278,7 +281,7 @@ public class FlagWar extends JavaPlugin {
     public void initializeInstances() {
         waypointManager = new WaypointManager(this);
         databaseManager = new DatabaseManager(this);
-        databaseInteraction = new DatabaseInteraction(getLogger(), databaseManager);
+        databaseInteraction = new BattleDatabase(getLogger(), databaseManager);
         battleManager = new BattleManager(this, databaseInteraction, waypointManager);
         battleClock = new BattleClock(this, battleManager);
     }

@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
-public final class DatabaseInteraction {
+public final class BattleDatabase {
 
     /** Holds the name of the battle table. */
     private static final String BATTLE_TABLE = "Battle";
@@ -27,7 +27,7 @@ public final class DatabaseInteraction {
     /** Holds the {@link Logger} of this class. */
     private final Logger LOGGER;
 
-    public DatabaseInteraction(Logger logger, DatabaseManager manager) {
+    public BattleDatabase(Logger logger, DatabaseManager manager) {
         this.MANAGER = manager;
         this.LOGGER = logger;
     }

@@ -1,4 +1,4 @@
-package io.github.townyadvanced.flagwar.battle_tracking.occurrences;
+package io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences;
 
 import org.bukkit.entity.Entity;
 import java.util.UUID;

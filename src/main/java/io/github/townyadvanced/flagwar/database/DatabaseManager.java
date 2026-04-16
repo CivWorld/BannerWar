@@ -42,7 +42,29 @@ public final class DatabaseManager {
             Town TEXT PRIMARY KEY NOT NULL,
             AttackDay INTEGER NOT NULL
         );
+        """,
         """
+        CREATE TABLE IF NOT EXISTS TrackedBattle (
+            ContestedTown TEXT PRIMARY KEY NOT NULL,
+            Attacker TEXT NOT NULL,
+            Defender TEXT NOT NULL,
+            StartTime INTEGER NOT NULL,
+            DamageLogs STRING NOT NULL
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS TrackedPlayer (
+            IncID TEXT PRIMARY KEY NOT NULL,
+            UUID TEXT NOT NULL,
+            BattleTown TEXT NOT NULL,
+            Affiliation TEXT NOT NULL,
+            DamageDealt REAL NOT NULL,
+            DamageTaken REAL NOT NULL,
+            Kills TEXT NOT NULL,
+            Deaths TEXT NOT NULL,
+            ConsumedGaps INTEGER NOT NULL,
+            ConsumedPots INTEGER NOT NULL,
+        );
+"""
     );
 
     /**

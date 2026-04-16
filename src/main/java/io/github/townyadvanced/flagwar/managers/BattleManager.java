@@ -8,7 +8,7 @@ import com.palmergames.bukkit.towny.object.WorldCoord;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.chunk.ChunkCopy;
-import io.github.townyadvanced.flagwar.database.DatabaseInteraction;
+import io.github.townyadvanced.flagwar.database.BattleDatabase;
 import io.github.townyadvanced.flagwar.events.BattleResumeEvent;
 import io.github.townyadvanced.flagwar.events.BattleStartEvent;
 import io.github.townyadvanced.flagwar.objects.*;
@@ -28,8 +28,8 @@ import java.util.concurrent.CompletableFuture;
 
 public final class BattleManager {
 
-    /** Holds the {@link DatabaseInteraction} instance. */
-    private final DatabaseInteraction DATABASE_INTERACTION;
+    /** Holds the {@link BattleDatabase} instance. */
+    private final BattleDatabase DATABASE;
 
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
@@ -43,8 +43,8 @@ public final class BattleManager {
     /** Holds a {@link HashMap} of every {@link Battle} and its associated contested town's name. */
     private static final Map<String, Battle> ACTIVE_BATTLES = new HashMap<>();
 
-    public BattleManager(JavaPlugin plugin, DatabaseInteraction databaseInteraction, WaypointManager waypointManager) {
-        DATABASE_INTERACTION = databaseInteraction;
+    public BattleManager(JavaPlugin plugin, BattleDatabase db, WaypointManager waypointManager) {
+        DATABASE = db;
         PLUGIN = plugin;
         SCHEDULER = Bukkit.getScheduler();
         WAYPOINT_MANAGER = waypointManager;
@@ -57,7 +57,7 @@ public final class BattleManager {
     private void resumeBattles() {
         ACTIVE_BATTLES.clear();
 
-        DATABASE_INTERACTION.getBattles().thenAccept(battleRecords -> {
+        DATABASE.getBattles().thenAccept(battleRecords -> {
             for (BattleRecord r : battleRecords) {
                 Battle battle = new Battle(r, this);
                 ACTIVE_BATTLES.put(r.contestedTown(), battle);
@@ -119,7 +119,7 @@ public final class BattleManager {
 
             BattleRecord rec = BattleRecord.of(battle);
             if (battle.getHomeBlock() != null && battle.getContestedTown() != null && rec != null)
-                DATABASE_INTERACTION.insertOrUpdate(rec);
+                DATABASE.insertOrUpdate(rec);
         }
     }
 
@@ -173,7 +173,7 @@ public final class BattleManager {
      * */
     public void removeBattleAndDB(Battle battle) {
         removeBattle(battle);
-        DATABASE_INTERACTION.deleteBattle(battle.getContestedTown().getName());
+        DATABASE.deleteBattle(battle.getContestedTown().getName());
     }
 
     /**
@@ -205,7 +205,7 @@ public final class BattleManager {
      * @param bannerPlacerRecord the {@link BannerPlacerRecord}
      */
     public void logBannerPlacer(BannerPlacerRecord bannerPlacerRecord) {
-        DATABASE_INTERACTION.insertOrUpdate(bannerPlacerRecord);
+        DATABASE.insertOrUpdate(bannerPlacerRecord);
     }
 
     /**
@@ -213,7 +213,7 @@ public final class BattleManager {
      * @param days the specified number of days
      */
     public CompletableFuture<Collection<Town>> getAllExpiredBannerPlacers(long days) {
-        return DATABASE_INTERACTION.getBannerPlacers().thenApply(bannerPlacerRecords -> {
+        return DATABASE.getBannerPlacers().thenApply(bannerPlacerRecords -> {
 
             Collection<Town> out = new ArrayList<>();
             bannerPlacerRecords.forEach(bp -> {
