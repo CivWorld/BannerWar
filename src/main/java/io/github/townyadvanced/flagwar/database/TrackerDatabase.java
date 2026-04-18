@@ -1,7 +1,21 @@
 package io.github.townyadvanced.flagwar.database;
 
 import io.github.townyadvanced.flagwar.FlagWar;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.Affiliation;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.BattleResultEnum;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.DamageOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.FlagOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.KillOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.results.PlayerResult;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.results.TrackedBattleResult;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 public class TrackerDatabase {
@@ -21,5 +35,150 @@ public class TrackerDatabase {
         this.MANAGER = manager;
     }
 
+    public CompletableFuture<Collection<TrackedBattleResult>> getTrackedBattles() {
+        System.out.println("getting tracked battles");
+        return CompletableFuture.supplyAsync(() -> {
+            Collection<TrackedBattleResult> battles = new ArrayList<>();
+            System.out.println("async territory");
+            String query = "SELECT * FROM " + TRACKED_BATTLE_TABLE;
+            try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        long unixStart = rs.getLong(4);
+                        String townName = rs.getString(1);
+                        System.out.println("added battle " + townName);
+                        var tbr = new TrackedBattleResult(
+                            townName,
+                            BattleResultEnum.ONGOING,
+                            rs.getString(2),
+                            rs.getString(3),
+                            unixStart,
+                            Duration.ofMillis(unixStart - System.currentTimeMillis()),
+                            getTrackedPlayers(townName),
+                            DamageOccurrence.deserialize(rs.getString(5))
+                        );
+                        System.out.println(tbr);
+                        battles.add(tbr);
+                    }
+                    System.out.println(battles);
+                    return battles;
+                }
+            } catch (SQLException e) {
+                LOGGER.severe(e.getMessage());
+                return new ArrayList<>();
+            }
+        });
+    }
 
+    public CompletableFuture<Void> insertOrUpdateBattle(TrackedBattleResult r) {
+        return CompletableFuture.runAsync(() -> {
+            String query = "INSERT OR REPLACE INTO " + TRACKED_BATTLE_TABLE +
+                " VALUES(?,?,?,?,?)";
+            try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
+                ps.setString(1, r.townName());
+                ps.setString(2, r.attackerNationName());
+                ps.setString(3, r.defenderNationName());
+                ps.setLong(4, r.unixStartTime());
+                ps.setString(5, DamageOccurrence.serialize(r.damageOccurrences()));
+
+                if (ps.executeUpdate() > 0)
+                    LOGGER.info("Successfully added battle " + r.townName() + " to database!");
+                else
+                    LOGGER.warning("Failed to add battle " + r.townName() + " to database!");
+
+            } catch (SQLException e) {
+                LOGGER.severe(e.getMessage());
+            }
+
+        });
+    }
+
+    public CompletableFuture<Void> deleteBattle(String contestedTown) {
+        return CompletableFuture.runAsync(() -> {
+            deleteTrackedPlayers(contestedTown);
+            String query = "DELETE FROM " + TRACKED_BATTLE_TABLE + " WHERE ContestedTown = ?";
+            try(PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
+                ps.setString(1, contestedTown);
+                ps.executeUpdate();
+            }
+            catch(SQLException e) {
+                LOGGER.severe(e.getMessage());
+            }
+        });
+    }
+
+    public void insertOrUpdatePlayersSync(Collection<PlayerResult> players, String battleTown) throws SQLException {
+        System.out.println("adding players to database");
+        System.out.println("players in question: " + players);
+
+        Connection conn = MANAGER.getConnection();
+        conn.setAutoCommit(false);
+
+        String query = "INSERT OR REPLACE INTO " + TRACKED_PLAYER_TABLE +
+            " VALUES (?,?,?,?,?,?,?,?,?,?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+
+            for (var trackedPlayer : players) {
+                ps.setString(1, trackedPlayer.playerName());
+                ps.setString(2, battleTown);
+                ps.setString(3, trackedPlayer.affiliation().name());
+                ps.setDouble(4, trackedPlayer.damageDealt());
+                ps.setDouble(5, trackedPlayer.damageTaken());
+                ps.setString(6, KillOccurrence.serialize(trackedPlayer.kills()));
+                ps.setString(7, KillOccurrence.serialize(trackedPlayer.deaths()));
+                ps.setInt(8, trackedPlayer.gapsUsed());
+                ps.setInt(9, trackedPlayer.potsUsed());
+                ps.setString(10, FlagOccurrence.serialize(trackedPlayer.flags()));
+                ps.addBatch();
+            }
+            ps.executeBatch();
+            conn.commit();
+        } catch (SQLException e) {conn.rollback();
+            System.out.println("failed to insert players!" + e.getMessage());}
+        finally {
+            conn.setAutoCommit(true);
+        }
+
+    }
+
+    private Map<String, PlayerResult> getTrackedPlayers(String battleTown) {
+        Map<String, PlayerResult> results = new HashMap<>();
+        String query = "SELECT * FROM " + TRACKED_PLAYER_TABLE + " WHERE BattleTown = ?";
+        try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
+            ps.setString(1, battleTown);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String name = rs.getString(2);
+                    results.put(name, new PlayerResult(
+                            name,
+                            Affiliation.valueOf(rs.getString(4)),
+                            KillOccurrence.deserialize(rs.getString(7)),
+                            KillOccurrence.deserialize(rs.getString(8)),
+                            rs.getDouble(5),
+                            rs.getDouble(6),
+                            rs.getInt(9),
+                            rs.getInt(10),
+                            FlagOccurrence.deserialize(rs.getString(11))
+                        )
+                    );
+                }
+                return results;
+            }
+        } catch (SQLException e) {
+            LOGGER.severe(e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    private void deleteTrackedPlayers(String battleTown) {
+        String query = "DELETE FROM " + TRACKED_PLAYER_TABLE + " WHERE BattleTown = ?";
+        try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
+            ps.setString(1, battleTown);
+            ps.executeUpdate();
+        }
+        catch (SQLException e) {
+            LOGGER.severe(e.getMessage());
+        }
+    }
 }

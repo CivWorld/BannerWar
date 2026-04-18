@@ -35,7 +35,9 @@ import com.palmergames.bukkit.towny.scheduling.impl.FoliaTaskScheduler;
 import com.palmergames.bukkit.towny.utils.AreaSelectionUtil;
 import com.palmergames.bukkit.util.Version;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattle;
+import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattleManager;
+import io.github.townyadvanced.flagwar.battle_tracking.listeners.FlagWarListener;
+import io.github.townyadvanced.flagwar.battle_tracking.listeners.VanillaListener;
 import io.github.townyadvanced.flagwar.command.ReloadConfig;
 import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
@@ -44,6 +46,7 @@ import io.github.townyadvanced.flagwar.config.ConfigLoader;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.database.DatabaseManager;
 import io.github.townyadvanced.flagwar.database.BattleDatabase;
+import io.github.townyadvanced.flagwar.database.TrackerDatabase;
 import io.github.townyadvanced.flagwar.events.CellAttackCanceledEvent;
 import io.github.townyadvanced.flagwar.events.CellAttackEvent;
 import io.github.townyadvanced.flagwar.events.CellDefendedEvent;
@@ -136,16 +139,24 @@ public class FlagWar extends JavaPlugin {
     private BattleListener battleListener;
     /** Holds instance of the {@link WearinessListener}. */
     private WearinessListener wearinessListener;
+    /** Holds instance of the {@link WearinessListener}. */
+    private FlagWarListener flagWarListener;
+    /** Holds instance of the {@link WearinessListener}. */
+    private VanillaListener vanillaListener;
     /** Holds instance of the {@link DatabaseManager}. */
     private DatabaseManager databaseManager;
     /** Holds instance of the {@link BattleDatabase}. */
-    private BattleDatabase databaseInteraction;
+    private BattleDatabase battleDatabase;
+    /** Holds instance of the {@link TrackerDatabase} */
+    private TrackerDatabase trackerDatabase;
     /** Holds instance of the {@link io.github.townyadvanced.flagwar.managers.BattleClock}. */
-    private io.github.townyadvanced.flagwar.managers.BattleClock battleClock;
+    private BattleClock battleClock;
     /** Holds instance of the {@link BattleManager}. */
     private BattleManager battleManager;
     /** Holds instance of the {@link WaypointManager} */
     private WaypointManager waypointManager;
+    /** Holds instance of the {@link TrackedBattleManager} */
+    private TrackedBattleManager trackedBattleManager;
 
     /**
      * Initializes the Scheduler object based on whether we're using Folia/Paper or Spigot/Bukkit.
@@ -175,7 +186,6 @@ public class FlagWar extends JavaPlugin {
 
             new TownyAdminReloadAddon();
             getCommands();
-            TrackedBattle.start();
         }
     }
 
@@ -216,7 +226,7 @@ public class FlagWar extends JavaPlugin {
         }
 
         deleteAllWayPoints();
-        TrackedBattle.stop();
+        trackedBattleManager.stop();
     }
 
     private void getCommands() {
@@ -274,6 +284,8 @@ public class FlagWar extends JavaPlugin {
         PLUGIN_MANAGER.registerEvents(outlawListener, this);
         PLUGIN_MANAGER.registerEvents(battleListener, this);
         PLUGIN_MANAGER.registerEvents(wearinessListener, this);
+        PLUGIN_MANAGER.registerEvents(vanillaListener, this);
+        PLUGIN_MANAGER.registerEvents(flagWarListener, this);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.events.registered"));
     }
 
@@ -281,9 +293,11 @@ public class FlagWar extends JavaPlugin {
     public void initializeInstances() {
         waypointManager = new WaypointManager(this);
         databaseManager = new DatabaseManager(this);
-        databaseInteraction = new BattleDatabase(getLogger(), databaseManager);
-        battleManager = new BattleManager(this, databaseInteraction, waypointManager);
+        battleDatabase = new BattleDatabase(getLogger(), databaseManager);
+        trackerDatabase = new TrackerDatabase(databaseManager);
+        battleManager = new BattleManager(this, battleDatabase, waypointManager);
         battleClock = new BattleClock(this, battleManager);
+        trackedBattleManager = new TrackedBattleManager(trackerDatabase);
     }
 
     /** Initialize Event Listeners. */
@@ -296,6 +310,8 @@ public class FlagWar extends JavaPlugin {
         outlawListener = new OutlawListener();
         battleListener = new BattleListener(battleManager);
         wearinessListener = new WearinessListener(this, battleManager);
+        vanillaListener = new VanillaListener(trackedBattleManager);
+        flagWarListener = new FlagWarListener(trackedBattleManager);
         FW_LOGGER.log(Level.INFO, () -> Translate.from("startup.listeners.initialized"));
     }
 

@@ -1,6 +1,7 @@
 package io.github.townyadvanced.flagwar.battle_tracking.util;
 
 import com.google.gson.Gson;
+import org.apache.logging.log4j.util.Strings;
 
 /**
  * A utility class created in order to allow for serialization and deserialization, notably of an {@link Object} to and from a JSON {@link String}, respectively.
@@ -14,16 +15,20 @@ public final class SerializationUtil
     private static final Gson gson = new Gson();
 
     /**
-     * Converts an {@link Object} to a serialized JSON {@link String}.
+     * Converts an {@link Object} to a serialized JSON {@link String}, or {@link Strings#EMPTY} if the object is {@code null}.
      * @param o the {@link Object} to be serialized
      * @return a JSON {@link String} to be stored in persistent storage
      */
-    public static String toJson(Object o) { return gson.toJson(o); }
+    public static String toJson(Object o) {
+        return o == null ? Strings.EMPTY : gson.toJson(o);
+    }
 
     /**
-     * Converts a JSON {@link String} to an {@link Object}.
+     * Converts a JSON {@link String} to an {@link Object}, or {@code null} if the JSON string is empty.
      * @param json the {@link String} to be deserialized
      * @return An {@link Object} for use in Java code
      */
-    public static Object fromJson(String json) { return gson.fromJson(json, Object.class); }
+    public static Object fromJson(String json, Class<?> clazz) {
+        return json.isEmpty() ? null : gson.fromJson(json, clazz);
+    }
 }

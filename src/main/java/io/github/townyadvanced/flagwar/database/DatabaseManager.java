@@ -50,19 +50,21 @@ public final class DatabaseManager {
             Defender TEXT NOT NULL,
             StartTime INTEGER NOT NULL,
             DamageLogs STRING NOT NULL
+            );
         """,
         """
         CREATE TABLE IF NOT EXISTS TrackedPlayer (
-            IncID TEXT PRIMARY KEY NOT NULL,
-            UUID TEXT NOT NULL,
+            Name TEXT NOT NULL,
             BattleTown TEXT NOT NULL,
             Affiliation TEXT NOT NULL,
             DamageDealt REAL NOT NULL,
             DamageTaken REAL NOT NULL,
-            Kills TEXT NOT NULL,
-            Deaths TEXT NOT NULL,
-            ConsumedGaps INTEGER NOT NULL,
-            ConsumedPots INTEGER NOT NULL,
+            Kills TEXT,
+            Deaths TEXT,
+            ConsumedGaps INTEGER DEFAULT 0,
+            ConsumedPots INTEGER DEFAULT 0,
+            FlagLogs STRING,
+            PRIMARY KEY(Name, BattleTown)
         );
 """
     );

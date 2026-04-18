@@ -1,12 +1,14 @@
 package io.github.townyadvanced.flagwar.battle_tracking.util;
 
-import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.WorldCoord;
+import io.github.townyadvanced.flagwar.BannerWarAPI;
+import io.github.townyadvanced.flagwar.objects.Battle;
 import org.bukkit.util.BoundingBox;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** See {@link #determineRegionFor(Town)}. */
 public final class BattleRegionDeterminer {
@@ -16,6 +18,7 @@ public final class BattleRegionDeterminer {
      * @param town the town
      */
     public static Collection<BoundingBox> determineRegionFor(Town town) {
+        System.out.println("Determining region for " + town.getName());
         return new BattleRegionDeterminer(town).determineRegion();
     }
 
@@ -34,10 +37,16 @@ public final class BattleRegionDeterminer {
     /** Holds the {@link Set} of every town block that has been marked as flooded. */
     private final Set<WorldCoord> WORLD_COORDS = new HashSet<>();
 
+    /** Holds the set of world coordinates that count as part of the town. */
+    private final Set<WorldCoord> VALID_COORDS;
+
     private BattleRegionDeterminer(Town town) {
      MIN_Y = town.getWorld().getMinHeight();
      MAX_Y = town.getWorld().getMaxHeight();
      this.TOWN = town;
+     Battle battle = BannerWarAPI.getBattle(TOWN);
+     VALID_COORDS = battle != null ? (new HashSet<>(battle.getInitialTownBlocksAsWorldCoords()))
+         : town.getTownBlocks().stream().map(TownBlock::getWorldCoord).collect(Collectors.toSet());
     }
 
     /**
@@ -47,10 +56,12 @@ public final class BattleRegionDeterminer {
     private Collection<BoundingBox> determineRegion() {
          List<BoundingBox> battleRegions = new ArrayList<>();
 
-         for (var townBlock : TOWN.getTownBlocks()) {
+         for (var coord : VALID_COORDS) {
              BoundingBox worldPart = new BoundingBox();
-             if (isNotTarget(townBlock)) continue;
-             flood(townBlock.getWorldCoord(), worldPart);
+             battleRegions.add(worldPart);
+             if (isNotTarget(coord)) continue;
+             mark(worldPart, coord);
+             flood(coord, worldPart);
          }
 
          battleRegions = mergeAndResize(battleRegions);
@@ -58,7 +69,7 @@ public final class BattleRegionDeterminer {
      }
 
     /**
-     * Initiates a 4-connected iterative flood fill of a town block, checking if {@link #isNotTarget(TownBlock)}
+     * Initiates a 4-connected iterative flood fill of a town block, checking if {@link #isNotTarget(WorldCoord)}
      * returns {@code false} before marking is as a non-target and calling adjacent town blocks.
      * @param worldCoord the {@link WorldCoord} of the town block
      * @param box the bounding box to be resized if the town block is marked
@@ -75,32 +86,35 @@ public final class BattleRegionDeterminer {
             int[][] directions = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
             for (int[] d : directions) {
                 WorldCoord other = current.add(d[0], d[1]);
-                TownBlock otherBlock = TownyAPI.getInstance().getTownBlock(other);
 
-                if (!isNotTarget(otherBlock)) {
-                    WORLD_COORDS.add(other);
-
-                    double minX = worldCoord.getX() * 16d;
-                    double minZ = worldCoord.getZ() * 16d;
-
-                    box = box.union(new BoundingBox(minX, MIN_Y, minZ, minX + 15, MAX_Y,  minZ + 15));
-
+                if (!isNotTarget(other)) {
+                    box = mark(box, worldCoord);
                     queue.add(other);
                 }
             }
         }
     }
 
+    private BoundingBox mark(BoundingBox box, WorldCoord worldCoord) {
+        WORLD_COORDS.add(worldCoord);
+
+        double minX = worldCoord.getX() * 16d;
+        double minZ = worldCoord.getZ() * 16d;
+
+        box = box.union(new BoundingBox(minX, MIN_Y, minZ, minX + 15, MAX_Y,  minZ + 15));
+        return box;
+    }
+
     /**
      * Returns whether a {@link TownBlock} has already been marked in {@link #WORLD_COORDS},
      * doesn't belong to the {@link #TOWN} or is {@code null}.
-     * @param townBlock the town block
+     * @param coord the {@link WorldCoord} of this town block
      */
-    private boolean isNotTarget(TownBlock townBlock) {
-        return townBlock == null
-            || townBlock.getTownOrNull() == null
-            || !townBlock.getTownOrNull().equals(TOWN)
-            || !WORLD_COORDS.contains(townBlock.getWorldCoord());
+    private boolean isNotTarget(WorldCoord coord) {
+        return coord == null
+            ||  coord.getTownBlockOrNull() == null
+            || !TOWN.equals(coord.getTownBlockOrNull().getTownOrNull())
+            || WORLD_COORDS.contains(coord);
      }
 
     /**

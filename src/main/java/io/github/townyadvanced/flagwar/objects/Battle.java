@@ -74,12 +74,12 @@ public class Battle {
      * @param contestedTown the town at which the battle is held
      * @param stm the system time in milliseconds (Unix Epoch) at which the battle started
      * @param preWarBlocks the {@link List} of the {@link WorldCoord} of every {@link TownBlock} that belonged to the town before the battle
-     * @param homeBlock the homeblock of the contested town
+     * @param homeBlock the homeblock coordinates of the contested town
      * @param isCityState whether this battle's town is a City State or not
      * @param stage the {@link BattleStage} of the battle
      * @param initialMayor the {@link Resident} who was mayor of the {@link #CONTESTED_TOWN} at the time of the attack
      */
-    private Battle(Nation attacker, Nation defender, Town contestedTown, Collection<WorldCoord> preWarBlocks, long stm, TownBlock homeBlock, boolean isCityState, BattleStage stage, Resident initialMayor, BattleManager mgr) {
+    private Battle(Nation attacker, Nation defender, Town contestedTown, Collection<WorldCoord> preWarBlocks, long stm, WorldCoord homeBlock, boolean isCityState, BattleStage stage, Resident initialMayor, BattleManager mgr) {
         this.ATTACKER = attacker;
         this.DEFENDER = defender;
         this.CONTESTED_TOWN = contestedTown;
@@ -88,7 +88,7 @@ public class Battle {
         this.stageStartTimeMillis = stm;
         this.isCityState = isCityState;
         this.stage = stage;
-        this.HOME_BLOCK_COORDS = homeBlock.getWorldCoord();
+        this.HOME_BLOCK_COORDS = homeBlock;
         this.INITIAL_MAYOR = initialMayor;
         this.STAGE_DURATIONS = BattleUtil.computeStageTimes(this);
         this.MANAGER = mgr;
@@ -115,7 +115,7 @@ public class Battle {
             System.currentTimeMillis(),
 
             // before a battle begins, the homeblock existence is checked at the battle listener
-            Objects.requireNonNull(contestedTown.getHomeBlockOrNull()),
+            Objects.requireNonNull(contestedTown.getHomeBlockOrNull()).getWorldCoord(),
 
             isCityState,
             BattleStage.PRE_FLAG,
@@ -135,8 +135,7 @@ public class Battle {
             TownyAPI.getInstance().getTown(br.contestedTown()),
             br.townBlocksCoords(),
             br.stageStartTime(),
-            TownyAPI.getInstance().getTownBlock(
-            new WorldCoord(Bukkit.getWorld(br.worldID()), br.homeX(), br.homeZ())),
+            new WorldCoord(Bukkit.getWorld(br.worldID()), br.homeX(), br.homeZ()),
             br.isCityState(),
             br.stage(),
             TownyAPI.getInstance().getResident(br.initialMayorID()),
@@ -163,7 +162,6 @@ public class Battle {
     public WorldCoord getHomeBlockCoords() {
         return HOME_BLOCK_COORDS;
     }
-
 
     /** Returns the town where the battle is held. */
     public Town getContestedTown() {

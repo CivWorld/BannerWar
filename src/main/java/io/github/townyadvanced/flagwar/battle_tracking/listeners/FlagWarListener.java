@@ -1,6 +1,7 @@
 package io.github.townyadvanced.flagwar.battle_tracking.listeners;
 
 import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattle;
+import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattleManager;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.FlagResult;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.FlagOccurrence;
 import io.github.townyadvanced.flagwar.events.*;
@@ -20,10 +21,15 @@ import java.util.Map;
 public class FlagWarListener implements Listener {
 
      private final Map<String, FlagOccurrence> FLAG_OCCURRENCES = new HashMap<>();
+     private final TrackedBattleManager TRACKED_BATTLE_MANAGER;
+
+     public FlagWarListener(TrackedBattleManager trackedBattleManager) {
+         this.TRACKED_BATTLE_MANAGER = trackedBattleManager;
+     }
 
     @EventHandler (priority = EventPriority.MONITOR)
     public void onBattleStart(BattleStartEvent e) {
-        TrackedBattle.trackBattle(e.getBattle());
+        TRACKED_BATTLE_MANAGER.trackBattle(e.getBattle());
     }
 
     @EventHandler (priority = EventPriority.MONITOR)
@@ -33,7 +39,7 @@ public class FlagWarListener implements Listener {
 
     @EventHandler (priority = EventPriority.MONITOR)
     public void onFlagPlace(CellAttackEvent e) {
-        TrackedBattle battle = TrackedBattle.getBattleAt(e.getFlagBlock().getLocation());
+        TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(e.getFlagBlock().getLocation());
         String placerName = e.getPlayer().getName();
         if (battle != null) {
             FLAG_OCCURRENCES.put(placerName, FlagOccurrence.create(placerName));
@@ -45,7 +51,7 @@ public class FlagWarListener implements Listener {
         var cell = e.getCellUnderAttack();
 
 
-        TrackedBattle battle = TrackedBattle.getBattleAt(cell.getFlagBaseBlock().getLocation());
+        TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(cell.getFlagBaseBlock().getLocation());
         if (battle != null) battle.flagSuccessEvent(
             FLAG_OCCURRENCES.get(cell.getNameOfFlagOwner()).completed(FlagResult.FLAG_DEFENDED, Strings.EMPTY)
         );
@@ -59,7 +65,8 @@ public class FlagWarListener implements Listener {
         //Vector vec = new Vector(cell.getX()*16d, 0, cell.getZ()*16d); in case the other breaks
         Vector vec = cell.getAttackData().getFlagBaseBlock().getLocation().toVector();
 
-        TrackedBattle battle = TrackedBattle.getBattleAt(vec);
+        TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(vec);
+        System.out.println(battle);
         if (battle != null) battle.flagBreakEvent(
             FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.FLAG_DEFENDED, player.getName())
         );
@@ -72,7 +79,7 @@ public class FlagWarListener implements Listener {
         var cellUnderAttack = e.getCell();
         String flagOwner = cellUnderAttack.getNameOfFlagOwner();
 
-        TrackedBattle battle = TrackedBattle.getBattleAt(cellUnderAttack.getFlagBaseBlock().getLocation());
+        TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(cellUnderAttack.getFlagBaseBlock().getLocation());
         if (battle != null) battle.flagCancelEvent(
             FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.ATTACK_CANCELLED, Strings.EMPTY)
         );

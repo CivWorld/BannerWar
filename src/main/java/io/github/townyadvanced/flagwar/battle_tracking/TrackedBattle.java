@@ -10,6 +10,7 @@ import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.Affiliat
 import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.DamageOccurrence;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.FlagOccurrence;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.KillOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.results.TrackedBattleResult;
 import io.github.townyadvanced.flagwar.battle_tracking.util.BattleRegionDeterminer;
 import io.github.townyadvanced.flagwar.objects.Battle;
 import org.bukkit.Bukkit;
@@ -21,7 +22,6 @@ import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -31,70 +31,51 @@ import java.util.*;
 
 public class TrackedBattle {
 
-    private static final Map<UUID, TrackedBattle> TRACKED_BATTLES = new HashMap<>();
-    private static BukkitTask heartbeatTask;
-
-    public static TrackedBattle getBattleAt(Location location) {
-        return getBattleAt(location.toVector());
-    }
-
-    public static TrackedBattle getBattleAt(Vector position) {
-        for (var battle : TRACKED_BATTLES.values()) {
-            if (battle.isInBattleRegion(position)) return battle;
-        }
-        return null;
-    }
-
-    public static void trackBattle(Battle battle) {
-        Town town = battle.getContestedTown();
-        TRACKED_BATTLES.put(town.getUUID(), new TrackedBattle(town, battle.getAttacker(), battle.getDefender()));
-    }
-
-    public static void start() {
-
-        TRACKED_BATTLES.clear(); // static, may survive restarts so might as well beam it.
-
-        heartbeatTask = Bukkit.getScheduler().runTaskTimer(FlagWar.getInstance(),
-            () -> {
-            for (var TB : TRACKED_BATTLES.values()) {
-                // todo add code to serialize.
-            }
-        }, 400L, 400L); // runs every 20 seconds.
-    }
-
-    public static void stop() {
-
-        TRACKED_BATTLES.clear();
-
-        if (heartbeatTask != null) {
-            heartbeatTask.cancel();
-            heartbeatTask = null;
-        }
-    }
-
-
-    // INSTANCE FIELDS
-
     private final Town TOWN;
     private final Nation ATTACKER;
     private final Nation DEFENDER;
     private final long UNIX_START_TIME;
     private final Collection<BoundingBox> BATTLE_REGION;
-    private final Map<UUID, TrackedPlayer> TRACKED_PLAYERS = new HashMap<>();
-    private final Deque<DamageOccurrence> DAMAGE_OCCURRENCES = new ArrayDeque<>();
+    private final Map<UUID, TrackedPlayer> TRACKED_PLAYERS;
+    private final Collection<DamageOccurrence> DAMAGE_OCCURRENCES;
 
-    private TrackedBattle(Town town, Nation attacker, Nation defender) {
+    private TrackedBattle(Town town, Nation attacker, Nation defender, long startTime, Map<UUID, TrackedPlayer> trackedPlayers, Collection<DamageOccurrence> damageOccurrences) {
+        System.out.println("INSTANTIATED A NEW BATTLE");
+        this.TOWN = town;
         this.ATTACKER = attacker;
         this.DEFENDER = defender;
-        this.TOWN = town;
-        this.BATTLE_REGION = BattleRegionDeterminer.determineRegionFor(town);
-        UNIX_START_TIME = System.currentTimeMillis();
+        this.UNIX_START_TIME = startTime;
+        BATTLE_REGION = BattleRegionDeterminer.determineRegionFor(town);
+        TRACKED_PLAYERS = trackedPlayers;
+        DAMAGE_OCCURRENCES = damageOccurrences;
     }
 
-    private boolean isInBattleRegion(Vector position) {
+    TrackedBattle(Town town, Nation attacker, Nation defender) {
+        this(
+            town,
+            attacker,
+            defender,
+            System.currentTimeMillis(),
+            new HashMap<>(),
+            new ArrayDeque<>()
+        );
+    }
+
+    TrackedBattle(TrackedBattleResult trackedBattleResult) {
+        this(
+            TownyAPI.getInstance().getTown(trackedBattleResult.townName()),
+            TownyAPI.getInstance().getNation(trackedBattleResult.attackerNationName()),
+            TownyAPI.getInstance().getNation(trackedBattleResult.defenderNationName()),
+            trackedBattleResult.unixStartTime(),
+            TrackedPlayer.fromMap(trackedBattleResult.playerResultMap()),
+            trackedBattleResult.damageOccurrences()
+        );
+        System.out.println("INSTANTIATED A NEW BATTLE");
+    }
+
+    boolean isInBattleRegion(Vector position) {
         for (BoundingBox b : BATTLE_REGION)
             if (b.contains(position)) return true;
-
         return false;
     }
 
@@ -109,7 +90,7 @@ public class TrackedBattle {
 
     public void addDamageOccurrence(Entity hurter, Entity hurted, double damage) {
         if (hurted instanceof Player hurtedPlayer) {
-            DAMAGE_OCCURRENCES.push(DamageOccurrence.from(hurter, hurted, damage));
+            DAMAGE_OCCURRENCES.add(DamageOccurrence.from(hurter, hurted, damage));
             getTrackedPlayer(hurtedPlayer).addDamageTaken(damage);
 
             if (hurter instanceof Player hurterPlayer) {
@@ -162,13 +143,9 @@ public class TrackedBattle {
     }
 
     public @NotNull TrackedPlayer getTrackedPlayer(OfflinePlayer p) {
-        var trackedPlayer = TRACKED_PLAYERS.getOrDefault(p.getUniqueId(), null);
-        if (trackedPlayer == null) {
-            trackedPlayer = new TrackedPlayer(p, determineAffiliation(p.getUniqueId()));
-            TRACKED_PLAYERS.put(p.getUniqueId(), trackedPlayer);
-        }
-
-        return trackedPlayer;
+        System.out.println("Queried tracked player " + p.getName());
+        return TRACKED_PLAYERS.computeIfAbsent(p.getUniqueId(),
+            id -> new TrackedPlayer(p, determineAffiliation(id)));
     }
 
     public @NotNull TrackedPlayer getTrackedPlayer(String name) {
@@ -201,5 +178,9 @@ public class TrackedBattle {
 
     public Nation getDefender() {
         return DEFENDER;
+    }
+
+    public Collection<DamageOccurrence> getDamageOccurrences() {
+        return DAMAGE_OCCURRENCES;
     }
 }

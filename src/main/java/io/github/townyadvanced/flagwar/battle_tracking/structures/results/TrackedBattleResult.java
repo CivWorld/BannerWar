@@ -2,8 +2,10 @@ package io.github.townyadvanced.flagwar.battle_tracking.structures.results;
 
 import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattle;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.BattleResultEnum;
+import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.DamageOccurrence;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,7 +16,8 @@ public record TrackedBattleResult(
     String defenderNationName,
     long unixStartTime,
     Duration battleDuration,
-    Map<String, PlayerResult> playerResultMap
+    Map<String, PlayerResult> playerResultMap,
+    Collection<DamageOccurrence> damageOccurrences
 ) {
 
     public static TrackedBattleResult parse(TrackedBattle battle, BattleResultEnum result) {
@@ -33,7 +36,8 @@ public record TrackedBattleResult(
             battle.getDefender().getName(),
             battle.getStartTime(),
             Duration.ofMillis(System.currentTimeMillis() - battle.getStartTime()),
-            playerResultMap
+            playerResultMap,
+            battle.getDamageOccurrences()
         );
     }
 

@@ -1,5 +1,6 @@
 package io.github.townyadvanced.flagwar.database;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.palmergames.bukkit.towny.TownyAPI;
 import io.github.townyadvanced.flagwar.objects.BannerPlacerRecord;
 import io.github.townyadvanced.flagwar.objects.BattleRecord;
@@ -33,7 +34,6 @@ public final class BattleDatabase {
     }
 
     public CompletableFuture<Collection<BattleRecord>> getBattles() {
-
         return CompletableFuture.supplyAsync(() -> {
             Collection<BattleRecord> battles = new ArrayList<>();
             String query = "SELECT * FROM " + BATTLE_TABLE;
@@ -92,6 +92,7 @@ public final class BattleDatabase {
         });
     }
 
+    @CanIgnoreReturnValue
     public CompletableFuture<Void> insertOrUpdate(BattleRecord r) {
         return CompletableFuture.runAsync(() -> {
             String query = "INSERT OR REPLACE INTO " + BATTLE_TABLE + " VALUES(?,?,?,?,?,?,?,?,?,?,?)";
