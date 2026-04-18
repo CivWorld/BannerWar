@@ -142,9 +142,6 @@ public final class BattleManager {
 
                 logBannerPlacer(BannerPlacerRecord.of(bannerPlacer));
 
-                var chunks = BattleUtil.toChunks(contestedTown.getTownBlocks(), contestedTown.getWorld());
-                ChunkCopy.getInstance().copy(BattleUtil.toChunkSnapshot(chunks));
-
                 Bukkit.getServer().getPluginManager().callEvent(new BattleStartEvent(battle, bannerPlacer));
 
             }, runnable -> SCHEDULER.runTask(PLUGIN, runnable))

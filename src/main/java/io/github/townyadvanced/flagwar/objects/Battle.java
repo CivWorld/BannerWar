@@ -6,11 +6,11 @@ import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.utils.TownRuinUtil;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
+import io.github.townyadvanced.flagwar.chunk.WorldEditService;
 import io.github.townyadvanced.flagwar.events.BattlePrematureEndEvent;
 import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.chunk.ChunkCopy;
-import io.github.townyadvanced.flagwar.chunk.ChunkPaste;
 import io.github.townyadvanced.flagwar.events.BattleEndEvent;
 import io.github.townyadvanced.flagwar.events.BattleFlaggableEvent;
 import io.github.townyadvanced.flagwar.events.BattleRuinEvent;
@@ -20,10 +20,10 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
+import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 
 /** Contains all the information required to host a BannerWar battle. */
@@ -95,8 +95,8 @@ public class Battle {
 
         createBossBar();
 
-        var chunks = BattleUtil.toChunks(contestedTown.getTownBlocks(), contestedTown.getWorld());
-        ChunkCopy.getInstance().copy(BattleUtil.toChunkSnapshot(chunks));
+        var chunks = BattleUtil.chunksFrom(getInitialTownBlocks());
+        WorldEditService.copyToDisk(CONTESTED_TOWN, BattleUtil.boundingBoxFrom(chunks));
     }
 
     /**
@@ -277,6 +277,7 @@ public class Battle {
             case FLAG -> { if (winDefense) winDefense(); else loseDefense(); }
             case RUINED -> unRuin();
             case DORMANT -> { setStage(BattleStage.END); MANAGER.removeBattleAndDB(this); }
+            case END -> {/* do nothing; it's done. */}
         }
         return getCurrentStage();
     }
@@ -329,11 +330,7 @@ public class Battle {
         setStage(BattleStage.DORMANT);
         deleteBossBar();
 
-        ChunkPaste.getInstance()
-            .paste(BattleUtil.toChunks(
-                getInitialTownBlocks(),
-                getContestedTown().getWorld()),
-                getContestedTown().getWorld());
+        WorldEditService.pasteToWorld(getContestedTown());
     }
 
     public void prematurelyEndBattle() {
