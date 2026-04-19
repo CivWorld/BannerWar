@@ -1,5 +1,6 @@
 package io.github.townyadvanced.flagwar.chunk;
 
+import com.fastasyncworldedit.core.function.RegionMaskTestFunction;
 import com.fastasyncworldedit.core.util.TaskManager;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.palmergames.bukkit.towny.object.Town;
@@ -10,7 +11,9 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.*;
+import com.sk89q.worldedit.function.RegionFunction;
 import com.sk89q.worldedit.function.mask.BlockTypeMask;
+import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
@@ -26,6 +29,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -123,18 +128,20 @@ public final class WorldEditService {
 
             try (EditSession editSession = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(world))) {
 
-                maskBlacklistedBlocks(editSession);
-
                 Operation operation = new ClipboardHolder(clipboard)
                         .createPaste(editSession)
                         .to(clipboard.getMinimumPoint())
+                        .maskSource(createBlockBlacklistMask(editSession))
                         .copyEntities(false)
                         .ignoreAirBlocks(true)
                         .build();
 
                 Operations.complete(operation);
 
-                unSuffocateNearbyEntities(town);
+                var chunks = BattleUtil.chunksFrom(BannerWarAPI.getBattle(town).getInitialTownBlocks());
+                BoundingBox box = BattleUtil.boundingBoxFrom(chunks);
+                unSuffocateNearbyEntities(box, town.getWorld());
+                deleteItems(box, town.getWorld());
 
             } catch (WorldEditException e) {
                 e.printStackTrace();
@@ -168,28 +175,27 @@ public final class WorldEditService {
     }
 
     /**
-     * Adds an inverse BlockTypeMask for every material in {@link BannerWarConfig#getBlacklistedMaterials()}
-     * to the EditSession.
-     * @param editSession the EditSession
+     * Adds every material in {@link BannerWarConfig#getBlacklistedMaterials()} to a BlockTypeMask
+     * and returns its negation.
+     * @param editSession the EditSession where the mask will occur
      */
-    private static void maskBlacklistedBlocks(EditSession editSession) {
-        for (Material material : BannerWarConfig.getBlacklistedMaterials()) {
-            editSession.setMask(
-                new BlockTypeMask(editSession, BukkitAdapter.asBlockType(material)
-            ).inverse());
-        }
+    private static Mask createBlockBlacklistMask(EditSession editSession) {
+        BlockTypeMask blacklistMask = new BlockTypeMask(editSession);
+
+        for (Material material : BannerWarConfig.getBlacklistedMaterials())
+            blacklistMask.add(BukkitAdapter.asBlockType(material));
+
+        return blacklistMask.inverse();
     }
 
     /**
-     * Gets every {@link LivingEntity} within the bounding box formed by the town, and teleports it upward
+     * Gets every {@link LivingEntity} within the bounding box, and teleports it upward
      * if it is suffocating.
-     * @param town the town
+     * @param box the bounding box
+     * @param world the world where the entities are retrieved
      */
-    private static void unSuffocateNearbyEntities(Town town) {
+    private static void unSuffocateNearbyEntities(BoundingBox box, World world) {
         Bukkit.getScheduler().runTask(FlagWar.getInstance(), () -> {
-            World world = town.getWorld();
-            var chunks = BattleUtil.chunksFrom(BannerWarAPI.getBattle(town).getInitialTownBlocks());
-            BoundingBox box = BattleUtil.boundingBoxFrom(chunks);
             var livingEntities = world.getNearbyEntities(box)
                 .stream().filter(LivingEntity.class::isInstance).toList();
 
@@ -200,5 +206,16 @@ public final class WorldEditService {
                 }
             }
         });
+    }
+
+    /**
+     * Deletes all items in the bounding box provided.
+     * @param box the bounding box
+     * @param world the world where the items are deleted
+     */
+    private static void deleteItems(BoundingBox box, World world) {
+        Bukkit.getScheduler().runTask(FlagWar.getInstance(), () ->
+             world.getNearbyEntities(box).stream().filter(Item.class::isInstance).forEach(Entity::remove)
+        );
     }
 }
