@@ -19,7 +19,6 @@ public record DamageOccurrence(
     }
 
     public static DamageOccurrence from(String JSONString) {
-        System.out.println(JSONString);
         return (DamageOccurrence) SerializationUtil.fromJson(JSONString, DamageOccurrence.class);
     }
 

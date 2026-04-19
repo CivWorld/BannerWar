@@ -13,8 +13,7 @@ import java.util.*;
 
 public class TrackedPlayer {
     private final OfflinePlayer PLAYER;
-    private final Affiliation AFFILIATION; // the issue of players switching teams mid-battle comes up
-    // recalculate affiliation at the end of the battle?
+    private Affiliation AFFILIATION;
 
     private double damageDealt;
     private double damageTaken;
@@ -111,6 +110,10 @@ public class TrackedPlayer {
 
     public Affiliation getAffiliation() {
         return AFFILIATION;
+    }
+
+    public void setAffiliation(Affiliation affiliation) {
+        this.AFFILIATION = affiliation;
     }
 
     public double getDamageDealt() {

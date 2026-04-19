@@ -18,7 +18,6 @@ public final class BattleRegionDeterminer {
      * @param town the town
      */
     public static Collection<BoundingBox> determineRegionFor(Town town) {
-        System.out.println("Determining region for " + town.getName());
         return new BattleRegionDeterminer(town).determineRegion();
     }
 

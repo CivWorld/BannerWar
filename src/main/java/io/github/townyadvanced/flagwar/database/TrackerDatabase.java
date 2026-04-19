@@ -36,17 +36,14 @@ public class TrackerDatabase {
     }
 
     public CompletableFuture<Collection<TrackedBattleResult>> getTrackedBattles() {
-        System.out.println("getting tracked battles");
         return CompletableFuture.supplyAsync(() -> {
             Collection<TrackedBattleResult> battles = new ArrayList<>();
-            System.out.println("async territory");
             String query = "SELECT * FROM " + TRACKED_BATTLE_TABLE;
             try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         long unixStart = rs.getLong(4);
                         String townName = rs.getString(1);
-                        System.out.println("added battle " + townName);
                         var tbr = new TrackedBattleResult(
                             townName,
                             BattleResultEnum.ONGOING,
@@ -54,13 +51,11 @@ public class TrackerDatabase {
                             rs.getString(3),
                             unixStart,
                             Duration.ofMillis(unixStart - System.currentTimeMillis()),
-                            getTrackedPlayers(townName),
+                            getTrackedPlayersSync(townName),
                             DamageOccurrence.deserialize(rs.getString(5))
                         );
-                        System.out.println(tbr);
                         battles.add(tbr);
                     }
-                    System.out.println(battles);
                     return battles;
                 }
             } catch (SQLException e) {
@@ -108,17 +103,13 @@ public class TrackerDatabase {
     }
 
     public void insertOrUpdatePlayersSync(Collection<PlayerResult> players, String battleTown) throws SQLException {
-        System.out.println("adding players to database");
-        System.out.println("players in question: " + players);
 
         Connection conn = MANAGER.getConnection();
         conn.setAutoCommit(false);
 
-        String query = "INSERT OR REPLACE INTO " + TRACKED_PLAYER_TABLE +
-            " VALUES (?,?,?,?,?,?,?,?,?,?)";
+        String query = "INSERT OR REPLACE INTO " + TRACKED_PLAYER_TABLE + " VALUES (?,?,?,?,?,?,?,?,?,?)";
 
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-
             for (var trackedPlayer : players) {
                 ps.setString(1, trackedPlayer.playerName());
                 ps.setString(2, battleTown);
@@ -135,31 +126,30 @@ public class TrackerDatabase {
             ps.executeBatch();
             conn.commit();
         } catch (SQLException e) {conn.rollback();
-            System.out.println("failed to insert players!" + e.getMessage());}
+            LOGGER.warning("Failed to add players to database! " + e.getMessage());}
         finally {
             conn.setAutoCommit(true);
         }
-
     }
 
-    private Map<String, PlayerResult> getTrackedPlayers(String battleTown) {
+    private Map<String, PlayerResult> getTrackedPlayersSync(String battleTown) {
         Map<String, PlayerResult> results = new HashMap<>();
         String query = "SELECT * FROM " + TRACKED_PLAYER_TABLE + " WHERE BattleTown = ?";
         try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
             ps.setString(1, battleTown);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    String name = rs.getString(2);
+                    String name = rs.getString(1);
                     results.put(name, new PlayerResult(
                             name,
-                            Affiliation.valueOf(rs.getString(4)),
+                            Affiliation.valueOf(rs.getString(3)),
+                            KillOccurrence.deserialize(rs.getString(6)),
                             KillOccurrence.deserialize(rs.getString(7)),
-                            KillOccurrence.deserialize(rs.getString(8)),
+                            rs.getDouble(4),
                             rs.getDouble(5),
-                            rs.getDouble(6),
                             rs.getInt(9),
-                            rs.getInt(10),
-                            FlagOccurrence.deserialize(rs.getString(11))
+                            rs.getInt(8),
+                            FlagOccurrence.deserialize(rs.getString(10))
                         )
                     );
                 }

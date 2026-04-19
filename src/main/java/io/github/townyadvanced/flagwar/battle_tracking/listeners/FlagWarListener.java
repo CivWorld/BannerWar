@@ -50,12 +50,15 @@ public class FlagWarListener implements Listener {
     public void onFlagWon(CellWonEvent e) {
         var cell = e.getCellUnderAttack();
 
-
         TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(cell.getFlagBaseBlock().getLocation());
-        if (battle != null) battle.flagSuccessEvent(
-            FLAG_OCCURRENCES.get(cell.getNameOfFlagOwner()).completed(FlagResult.FLAG_DEFENDED, Strings.EMPTY)
-        );
+        if (battle != null) {
+            battle.flagSuccessEvent(
+                FLAG_OCCURRENCES.get(cell.getNameOfFlagOwner()).completed(FlagResult.FLAG_SUCCESS, Strings.EMPTY)
+            );
+            FLAG_OCCURRENCES.remove(cell.getNameOfFlagOwner());
+        }
     }
+
 
     @EventHandler (priority = EventPriority.MONITOR)
     public void onFlagDefend(CellDefendedEvent e) {
@@ -66,10 +69,12 @@ public class FlagWarListener implements Listener {
         Vector vec = cell.getAttackData().getFlagBaseBlock().getLocation().toVector();
 
         TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(vec);
-        System.out.println(battle);
-        if (battle != null) battle.flagBreakEvent(
-            FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.FLAG_DEFENDED, player.getName())
-        );
+        if (battle != null) {
+            battle.flagBreakEvent(
+                FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.FLAG_DEFENDED, player.getName())
+            );
+            FLAG_OCCURRENCES.remove(flagOwner);
+        }
 
         Bukkit.broadcastMessage(player.getName() + " just broke the flag of " + flagOwner);
     }
@@ -80,9 +85,12 @@ public class FlagWarListener implements Listener {
         String flagOwner = cellUnderAttack.getNameOfFlagOwner();
 
         TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(cellUnderAttack.getFlagBaseBlock().getLocation());
-        if (battle != null) battle.flagCancelEvent(
-            FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.ATTACK_CANCELLED, Strings.EMPTY)
-        );
+        if (battle != null) {
+            battle.flagCancelEvent(
+                FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.ATTACK_CANCELLED, Strings.EMPTY)
+            );
+            FLAG_OCCURRENCES.remove(flagOwner);
+        }
 
     }
 

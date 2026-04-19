@@ -11,7 +11,7 @@ import java.util.Collection;
 public record FlagOccurrence(
     String flagPlacer,
     long unixStartTime,
-    Duration lifeTime, // this value does NOT update.
+    long lifeTime, // this value does NOT update.
     FlagResult result,
     String flagDestroyer
 
@@ -21,7 +21,7 @@ public record FlagOccurrence(
         return new FlagOccurrence(
             flagPlacer,
             System.currentTimeMillis(),
-            Duration.ZERO,
+            -1,
             FlagResult.ONGOING,
             Strings.EMPTY
         );
@@ -31,14 +31,13 @@ public record FlagOccurrence(
         return new FlagOccurrence(
             this.flagPlacer(),
             this.unixStartTime(),
-            Duration.ofMillis(System.currentTimeMillis() - this.unixStartTime()),
+            System.currentTimeMillis() - unixStartTime,
             result,
             flagDestroyer
         );
     }
 
     public static FlagOccurrence from(String JSONString) {
-        System.out.println(JSONString);
         return (FlagOccurrence) SerializationUtil.fromJson(JSONString, FlagOccurrence.class);
     }
 
@@ -58,9 +57,10 @@ public record FlagOccurrence(
 
     public static String serialize(Collection<FlagOccurrence> flagOccurrences) {
         Collection<String> jsonStrings = new ArrayList<>();
-        for (FlagOccurrence damageOccurrence : flagOccurrences) {
-            jsonStrings.add(toJSON(damageOccurrence));
+        for (var flagOccurrence : flagOccurrences) {
+            jsonStrings.add(toJSON(flagOccurrence));
         }
+
         return String.join("\n", jsonStrings);
     }
 }

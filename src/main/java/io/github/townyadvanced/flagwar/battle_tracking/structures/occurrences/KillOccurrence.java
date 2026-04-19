@@ -22,7 +22,6 @@ public record KillOccurrence(
     }
 
     public static KillOccurrence from(String JSONString) {
-        System.out.println(JSONString);
         return (KillOccurrence) SerializationUtil.fromJson(JSONString, KillOccurrence.class);
     }
 

@@ -5,16 +5,13 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.Affiliation;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.DamageOccurrence;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.FlagOccurrence;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.KillOccurrence;
 import io.github.townyadvanced.flagwar.battle_tracking.structures.results.TrackedBattleResult;
 import io.github.townyadvanced.flagwar.battle_tracking.util.BattleRegionDeterminer;
-import io.github.townyadvanced.flagwar.objects.Battle;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -40,7 +37,6 @@ public class TrackedBattle {
     private final Collection<DamageOccurrence> DAMAGE_OCCURRENCES;
 
     private TrackedBattle(Town town, Nation attacker, Nation defender, long startTime, Map<UUID, TrackedPlayer> trackedPlayers, Collection<DamageOccurrence> damageOccurrences) {
-        System.out.println("INSTANTIATED A NEW BATTLE");
         this.TOWN = town;
         this.ATTACKER = attacker;
         this.DEFENDER = defender;
@@ -70,7 +66,6 @@ public class TrackedBattle {
             TrackedPlayer.fromMap(trackedBattleResult.playerResultMap()),
             trackedBattleResult.damageOccurrences()
         );
-        System.out.println("INSTANTIATED A NEW BATTLE");
     }
 
     boolean isInBattleRegion(Vector position) {
@@ -110,7 +105,6 @@ public class TrackedBattle {
         getTrackedPlayer(thrower).registerConsumedPotion(throwable.getPotionMeta().getBasePotionData().getType());
     }
 
-
     public void flagSuccessEvent(FlagOccurrence flagOccurrence) {
         registerFlag(flagOccurrence);
     }
@@ -130,8 +124,7 @@ public class TrackedBattle {
         // if you broke your ally's flag.
         if (BannerWarAPI.isAssociatedWithNation(rBreaker, rFlagOwner.getTownOrNull().getNationOrNull())) return;
 
-        getTrackedPlayer(flagPlacer).registerFlag(flagOccurrence);
-        getTrackedPlayer(flagDestroyer).registerFlag(flagOccurrence);
+        registerFlag(flagOccurrence);
     }
 
     public void flagCancelEvent(FlagOccurrence flagOccurrence) {
@@ -139,11 +132,13 @@ public class TrackedBattle {
     }
 
     public void registerFlag(FlagOccurrence flagOccurrence) {
-        getTrackedPlayer(Bukkit.getOfflinePlayer(flagOccurrence.flagPlacer())).registerFlag(flagOccurrence);
+        getTrackedPlayer(flagOccurrence.flagPlacer()).registerFlag(flagOccurrence);
+        String destroyer = flagOccurrence.flagDestroyer(); // we are destroyers
+        if (destroyer == null || destroyer.isEmpty()) return;
+        getTrackedPlayer(destroyer).registerFlag(flagOccurrence);
     }
 
     public @NotNull TrackedPlayer getTrackedPlayer(OfflinePlayer p) {
-        System.out.println("Queried tracked player " + p.getName());
         return TRACKED_PLAYERS.computeIfAbsent(p.getUniqueId(),
             id -> new TrackedPlayer(p, determineAffiliation(id)));
     }
@@ -160,8 +155,20 @@ public class TrackedBattle {
         return Affiliation.VAGRANT;
     }
 
+    /**
+     * Returns the {@link #TRACKED_PLAYERS}'s value collection, where every player's
+     * {@link Affiliation} is updated.
+     * <p>
+     * This returns an unmodifiable view of the collection to prevent undesired manipulation of its elements.
+     */
     public Collection<TrackedPlayer> getTrackedPlayers() {
-        return TRACKED_PLAYERS.values();
+        TRACKED_PLAYERS.values().forEach(tp -> {
+            UUID id = tp.getOfflinePlayer().getUniqueId();
+            var affiliation = determineAffiliation(id);
+            tp.setAffiliation(affiliation);
+
+        });
+        return Collections.unmodifiableCollection(TRACKED_PLAYERS.values());
     }
 
     public long getStartTime() {

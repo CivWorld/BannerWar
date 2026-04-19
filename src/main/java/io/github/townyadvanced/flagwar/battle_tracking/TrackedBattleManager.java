@@ -15,6 +15,7 @@ import org.bukkit.util.Vector;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public final class TrackedBattleManager {
 
@@ -41,9 +42,9 @@ public final class TrackedBattleManager {
 
     public TrackedBattleManager(TrackerDatabase database) {
         this.DATABASE = database;
-        // HACK: stand by for 8 seconds to allow for all asynchronous loading to occur.
+        // HACK: stand by for 5 seconds to allow for all asynchronous loading to occur.
         // could have the battle tracker be restored upon BattleResumeEvent but can't be bothered to implement.
-        Bukkit.getScheduler().runTaskLater(PLUGIN, this::start, 160);
+        Bukkit.getScheduler().runTaskLater(PLUGIN, this::start, 100);
     }
 
     public void start() {
@@ -78,9 +79,7 @@ public final class TrackedBattleManager {
     }
 
     private void populateBattles() {
-        System.out.println("Populating Battles");
         DATABASE.getTrackedBattles().thenAcceptAsync(trackedBattleResults -> {
-            System.out.println("TRACKED BATTLES " + trackedBattleResults);
             for (var tbr : trackedBattleResults) {
                 TRACKED_BATTLES.put(tbr.townName(), new TrackedBattle(tbr));
             }

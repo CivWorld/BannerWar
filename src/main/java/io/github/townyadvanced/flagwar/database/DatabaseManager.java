@@ -49,7 +49,7 @@ public final class DatabaseManager {
             Attacker TEXT NOT NULL,
             Defender TEXT NOT NULL,
             StartTime INTEGER NOT NULL,
-            DamageLogs STRING NOT NULL
+            DamageLogs TEXT NOT NULL
             );
         """,
         """
@@ -63,7 +63,7 @@ public final class DatabaseManager {
             Deaths TEXT,
             ConsumedGaps INTEGER DEFAULT 0,
             ConsumedPots INTEGER DEFAULT 0,
-            FlagLogs STRING,
+            FlagLogs TEXT,
             PRIMARY KEY(Name, BattleTown)
         );
 """
