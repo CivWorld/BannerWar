@@ -1,6 +1,5 @@
-package io.github.townyadvanced.flagwar.chunk;
+package io.github.townyadvanced.flagwar.worldedit;
 
-import com.fastasyncworldedit.core.function.RegionMaskTestFunction;
 import com.fastasyncworldedit.core.util.TaskManager;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.palmergames.bukkit.towny.object.Town;
@@ -11,9 +10,6 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.BlockArrayClipboard;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.*;
-import com.sk89q.worldedit.function.RegionFunction;
-import com.sk89q.worldedit.function.mask.BlockTypeMask;
-import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
@@ -22,12 +18,10 @@ import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.FlagWar;
-import io.github.townyadvanced.flagwar.config.BannerWarConfig;
 import io.github.townyadvanced.flagwar.util.BattleUtil;
 import io.github.townyadvanced.flagwar.util.Broadcasts;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
@@ -80,6 +74,7 @@ public final class WorldEditService {
      * @param box the bounding box
      */
     public static void copyToDisk(Town town, BoundingBox box) {
+        LOGGER.info("Copying " + town.getName() + " to disk.");
         World world = town.getWorld();
         TaskManager.taskManager().async(() ->  {
             CuboidRegion region = getRegionFrom(box, world);
@@ -109,6 +104,7 @@ public final class WorldEditService {
      */
     @CanIgnoreReturnValue
     public static CompletableFuture<Void> pasteToWorld(Town town) {
+        LOGGER.info("Pasting " + town.getName() + " to world.");
         World world = town.getWorld();
         File schemFile = new File(STRUCTURE_PATH, town.getUUID() + SCHEM_EXTENSION);
 
@@ -131,9 +127,9 @@ public final class WorldEditService {
                 Operation operation = new ClipboardHolder(clipboard)
                         .createPaste(editSession)
                         .to(clipboard.getMinimumPoint())
-                        .maskSource(createBlockBlacklistMask(editSession))
+                        .maskSource(WorldEditHelper.createBlockBlacklistMask(clipboard))
                         .copyEntities(false)
-                        .ignoreAirBlocks(true)
+                        .ignoreAirBlocks(false)
                         .build();
 
                 Operations.complete(operation);
@@ -175,20 +171,6 @@ public final class WorldEditService {
     }
 
     /**
-     * Adds every material in {@link BannerWarConfig#getBlacklistedMaterials()} to a BlockTypeMask
-     * and returns its negation.
-     * @param editSession the EditSession where the mask will occur
-     */
-    private static Mask createBlockBlacklistMask(EditSession editSession) {
-        BlockTypeMask blacklistMask = new BlockTypeMask(editSession);
-
-        for (Material material : BannerWarConfig.getBlacklistedMaterials())
-            blacklistMask.add(BukkitAdapter.asBlockType(material));
-
-        return blacklistMask.inverse();
-    }
-
-    /**
      * Gets every {@link LivingEntity} within the bounding box, and teleports it upward
      * if it is suffocating.
      * @param box the bounding box
@@ -200,7 +182,7 @@ public final class WorldEditService {
                 .stream().filter(LivingEntity.class::isInstance).toList();
 
             for (var entity : livingEntities) {
-                if (ChunkHelper.checkUnSuffocate(entity) && entity instanceof Player p) {
+                if (WorldEditHelper.checkUnSuffocate(entity) && entity instanceof Player p) {
                     Broadcasts.sendMessage(p,
                         "Teleported you to the top during chunk restoration!", ChatColor.YELLOW);
                 }

@@ -7,7 +7,6 @@ import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.FlagWar;
-import io.github.townyadvanced.flagwar.chunk.ChunkCopy;
 import io.github.townyadvanced.flagwar.database.DatabaseInteraction;
 import io.github.townyadvanced.flagwar.events.BattleResumeEvent;
 import io.github.townyadvanced.flagwar.events.BattleStartEvent;
