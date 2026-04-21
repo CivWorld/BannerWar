@@ -30,7 +30,7 @@ import java.util.Collection;
  * <p>
  * Please note that a {@link PersistentChunk} that represents a {@link Chunk} completely filled with air will be taken to be useless.
  * This is because, due to optimizations, they store null {@link #materials} and {@link #blockData}.
- * This fits the conditions set by {@link #isUseless()}, resulting in a {@code true} result.
+ * This fits the conditions set by {@link #isUseless()}, resulting in a {@code true} status.
  */
 class PersistentChunk {
 

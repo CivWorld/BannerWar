@@ -184,7 +184,7 @@ public class FlagWarBlockListener implements Listener {
      * {@link TownyActionEvent#setCancelled(boolean)} to {@link Boolean#FALSE}.
      *
      * @param event the calling {@link TownyActionEvent}
-     * @param p the {@link Player}, typically result of {@link TownyActionEvent#getPlayer()}, being passed along.
+     * @param p the {@link Player}, typically status of {@link TownyActionEvent#getPlayer()}, being passed along.
      * @param b the {@link Block} being passed along.
      * @param wC the {@link WorldCoord} being passed along.
      */

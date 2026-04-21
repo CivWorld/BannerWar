@@ -118,7 +118,7 @@ public final class BattleRegionDeterminer {
 
     /**
      * Takes every bounding box in a collection and merges ones that are adjacent or overlapping, while also
-     * resizing the final result by expanding them by the {@link #EXPANSION}.
+     * resizing the final status by expanding them by the {@link #EXPANSION}.
      * @param boxes the collection to be used for this
      */
     private static List<BoundingBox> mergeAndResize(List<BoundingBox> boxes) {

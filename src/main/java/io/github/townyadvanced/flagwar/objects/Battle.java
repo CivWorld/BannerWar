@@ -355,7 +355,7 @@ public class Battle {
             TownRuinUtil.reclaimTown(getInitialMayor(), getContestedTown());
     }
 
-    /** Procedures to be performed at the end of a war, regardless of the result,
+    /** Procedures to be performed at the end of a war, regardless of the status,
      * such as transferring ownership of {@link TownBlock}s back and cancelling ongoing flags. */
     private void endWarProcedures() {
 

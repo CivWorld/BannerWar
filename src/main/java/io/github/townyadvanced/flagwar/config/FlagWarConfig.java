@@ -74,7 +74,7 @@ public final class FlagWarConfig {
     static final Material[] TIMER_MATERIALS = isUsingDefaultTimerBlocks()
         ? DEFAULT_TIMER_MATERIALS : getCustomTimerBlocks();
 
-    /** Holds the result of {@link #isHologramConfigured()}. */
+    /** Holds the status of {@link #isHologramConfigured()}. */
     private static boolean isHologramEnabled = isHologramConfigured();
 
     /**
@@ -203,7 +203,7 @@ public final class FlagWarConfig {
         }
     }
 
-    /** @return {@link #isHologramEnabled}, the cached result of {@link #isHologramConfigured()}. */
+    /** @return {@link #isHologramEnabled}, the cached status of {@link #isHologramConfigured()}. */
     public static boolean isHologramEnabled() {
         return isHologramEnabled;
     }
@@ -403,7 +403,7 @@ public final class FlagWarConfig {
 
     /**
      * Check if the beacon should be drawn.
-     * @return the result of "beacon.draw", from the configuration file.
+     * @return the status of "beacon.draw", from the configuration file.
      */
     public static boolean isDrawingBeacon() {
         var beaconIsDrawn = PLUGIN.getConfig().getBoolean("beacon.draw");
@@ -413,7 +413,7 @@ public final class FlagWarConfig {
 
     /**
      * Gets the maximum amount of active flags a player can have in play.
-     * @return the result of player_limits.max_active_flags_per_player, from the configuration file.
+     * @return the status of player_limits.max_active_flags_per_player, from the configuration file.
      */
     public static int getMaxActiveFlagsPerPerson() {
         return PLUGIN.getConfig().getInt("player_limits.max_active_flags_per_player");

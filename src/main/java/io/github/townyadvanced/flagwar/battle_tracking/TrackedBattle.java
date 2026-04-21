@@ -5,11 +5,11 @@ import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.Affiliation;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.DamageOccurrence;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.FlagOccurrence;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.KillOccurrence;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.results.TrackedBattleResult;
+import io.github.townyadvanced.flagwar.battle_tracking.model.enums.Affiliation;
+import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.DamageOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.FlagOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.KillOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.model.results.BattleSnapshot;
 import io.github.townyadvanced.flagwar.battle_tracking.util.BattleRegionDeterminer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -25,15 +25,30 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-
+/** A class representing all tracked events and players pertaining to a BannerWar battle. */
 public class TrackedBattle {
 
+    // very shoddily Javadoced and im sorry for that
+
+    /** Holds the {@link Town} that this battle is concerned with. */
     private final Town TOWN;
+
+    /** Holds the attacking {@link Nation} of this battle. */
     private final Nation ATTACKER;
+
+    /** Holds the defending {@link Nation} of this battle. */
     private final Nation DEFENDER;
+
+    /** Holds the Unix epoch timestamp when this battle began. */
     private final long UNIX_START_TIME;
+
+    /** Holds a collection of bounding boxes that together make up the battle region of this battle. */
     private final Collection<BoundingBox> BATTLE_REGION;
+
+    /** Holds a {@link Map} of all {@link TrackedPlayer}s that are being logged in this battle. */
     private final Map<UUID, TrackedPlayer> TRACKED_PLAYERS;
+
+    /** Holds a collection of all {@link DamageOccurrence}s of this battle. */
     private final Collection<DamageOccurrence> DAMAGE_OCCURRENCES;
 
     private TrackedBattle(Town town, Nation attacker, Nation defender, long startTime, Map<UUID, TrackedPlayer> trackedPlayers, Collection<DamageOccurrence> damageOccurrences) {
@@ -46,6 +61,12 @@ public class TrackedBattle {
         DAMAGE_OCCURRENCES = damageOccurrences;
     }
 
+    /**
+     * Starts tracking a new BannerWar battle
+     * @param town the town where the battle is taking place
+     * @param attacker the attacking nation of this battle
+     * @param defender the defending nation of this battle
+     */
     TrackedBattle(Town town, Nation attacker, Nation defender) {
         this(
             town,
@@ -57,23 +78,29 @@ public class TrackedBattle {
         );
     }
 
-    TrackedBattle(TrackedBattleResult trackedBattleResult) {
+    /**
+     * Resumes the tracking of a BannerWar battle from a {@link BattleSnapshot}.
+     * @param battleSnapshot the snapshot
+     */
+    TrackedBattle(BattleSnapshot battleSnapshot) {
         this(
-            TownyAPI.getInstance().getTown(trackedBattleResult.townName()),
-            TownyAPI.getInstance().getNation(trackedBattleResult.attackerNationName()),
-            TownyAPI.getInstance().getNation(trackedBattleResult.defenderNationName()),
-            trackedBattleResult.unixStartTime(),
-            TrackedPlayer.fromMap(trackedBattleResult.playerResultMap()),
-            trackedBattleResult.damageOccurrences()
+            TownyAPI.getInstance().getTown(battleSnapshot.townName()),
+            TownyAPI.getInstance().getNation(battleSnapshot.attackerNationName()),
+            TownyAPI.getInstance().getNation(battleSnapshot.defenderNationName()),
+            battleSnapshot.unixStartTime(),
+            TrackedPlayer.fromMap(battleSnapshot.playerResultMap()),
+            battleSnapshot.damageOccurrences()
         );
     }
 
+    /** Returns whether the specified vector position is in the battle region of this battle. */
     boolean isInBattleRegion(Vector position) {
         for (BoundingBox b : BATTLE_REGION)
             if (b.contains(position)) return true;
         return false;
     }
 
+    /** Logs a new {@link KillOccurrence} relevant to the tracked players of this battle. */
     public void addKillOccurrence(Entity killer, Player killed, ItemStack weapon, EntityDamageEvent.DamageCause cause) {
         var killOccurrence = KillOccurrence.from(killer, killed, weapon, cause);
         getTrackedPlayer(killed).incrementDeaths(killOccurrence);
@@ -83,6 +110,7 @@ public class TrackedBattle {
         }
     }
 
+    /** Logs a new {@link DamageOccurrence} relevant to the tracked players of this battle. */
     public void addDamageOccurrence(Entity hurter, Entity hurted, double damage) {
         if (hurted instanceof Player hurtedPlayer) {
             DAMAGE_OCCURRENCES.add(DamageOccurrence.from(hurter, hurted, damage));
@@ -94,6 +122,7 @@ public class TrackedBattle {
         }
     }
 
+    /** Increments the number of items of that material (could be a potion) consumed for the relevant player. */
     public void onConsume(Player consumer, ItemStack item) {
         if (item.getItemMeta() instanceof PotionMeta pm)
             getTrackedPlayer(consumer).registerConsumedPotion(pm.getBasePotionData().getType());
@@ -101,14 +130,17 @@ public class TrackedBattle {
         else getTrackedPlayer(consumer).registerConsumedItem(item.getType());
     }
 
+    /** Increments the number of potions of that material consumed (via throwing or otherwise) for the relevant player. */
     public void onPotionThrow(@NotNull Player thrower, @NotNull ThrownPotion throwable) {
         getTrackedPlayer(thrower).registerConsumedPotion(throwable.getPotionMeta().getBasePotionData().getType());
     }
 
+    /** Logs a {@link FlagOccurrence} relevant to the tracked players of this battle. */
     public void flagSuccessEvent(FlagOccurrence flagOccurrence) {
         registerFlag(flagOccurrence);
     }
 
+    /** Logs a defended {@link FlagOccurrence} relevant to the tracked players of this battle. */
     public void flagBreakEvent(FlagOccurrence flagOccurrence) {
         String flagPlacer = flagOccurrence.flagPlacer();
         String flagDestroyer = flagOccurrence.flagDestroyer();
@@ -127,10 +159,12 @@ public class TrackedBattle {
         registerFlag(flagOccurrence);
     }
 
+    /** Logs a canceled {@link FlagOccurrence} relevant to the tracked players of this battle. */
     public void flagCancelEvent(FlagOccurrence flagOccurrence) {
         registerFlag(flagOccurrence);
     }
 
+    /** Logs a completed {@link FlagOccurrence} relevant to the tracked players of this battle. */
     public void registerFlag(FlagOccurrence flagOccurrence) {
         getTrackedPlayer(flagOccurrence.flagPlacer()).registerFlag(flagOccurrence);
         String destroyer = flagOccurrence.flagDestroyer(); // we are destroyers
@@ -138,15 +172,18 @@ public class TrackedBattle {
         getTrackedPlayer(destroyer).registerFlag(flagOccurrence);
     }
 
+    /** Returns a {@link TrackedPlayer} from the specified {@link OfflinePlayer}. */
     public @NotNull TrackedPlayer getTrackedPlayer(OfflinePlayer p) {
         return TRACKED_PLAYERS.computeIfAbsent(p.getUniqueId(),
             id -> new TrackedPlayer(p, determineAffiliation(id)));
     }
 
+    /** Returns a {@link TrackedPlayer} from the specified name. */
     public @NotNull TrackedPlayer getTrackedPlayer(String name) {
         return getTrackedPlayer(Bukkit.getOfflinePlayer(name));
     }
 
+    /** Computes the {@link Affiliation} of the player with this UUID. */
     private Affiliation determineAffiliation(UUID id) {
         Resident resident = TownyAPI.getInstance().getResident(id);
 
@@ -171,22 +208,27 @@ public class TrackedBattle {
         return Collections.unmodifiableCollection(TRACKED_PLAYERS.values());
     }
 
+    /** Returns the Unix epoch timestamp when this battle started. */
     public long getStartTime() {
         return UNIX_START_TIME;
     }
 
+    /** Returns the {@link Town} that this battle is concerned with. */
     public Town getTown() {
         return TOWN;
     }
 
+    /** Returns the attacking {@link Nation} of this battle. */
     public Nation getAttacker() {
         return ATTACKER;
     }
 
+    /** Returns the defending {@link Nation} of this battle. */
     public Nation getDefender() {
         return DEFENDER;
     }
 
+    /** Returns a collection of all {@link DamageOccurrence}s of this battle. */
     public Collection<DamageOccurrence> getDamageOccurrences() {
         return DAMAGE_OCCURRENCES;
     }

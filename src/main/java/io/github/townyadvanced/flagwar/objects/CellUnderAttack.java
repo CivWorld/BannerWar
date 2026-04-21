@@ -482,7 +482,7 @@ public class CellUnderAttack extends Cell {
      * respecting that it may have exceeded the permissible number of {@link CellUnderAttack#lifeAdditions}
      * or that the time elapsed has exceeded the allowed flag life interval.
      * <p>
-     * Also messages the player the result of the operation.
+     * Also messages the player the status of the operation.
      * @param adder the {@link Player} who added this life
      * @return whether a life has been added
      */

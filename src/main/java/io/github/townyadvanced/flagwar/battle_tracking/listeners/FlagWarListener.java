@@ -2,8 +2,8 @@ package io.github.townyadvanced.flagwar.battle_tracking.listeners;
 
 import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattle;
 import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattleManager;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.FlagResult;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.FlagOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.model.enums.FlagStatus;
+import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.FlagOccurrence;
 import io.github.townyadvanced.flagwar.events.*;
 import io.github.townyadvanced.flagwar.objects.Cell;
 import org.apache.logging.log4j.util.Strings;
@@ -53,7 +53,7 @@ public class FlagWarListener implements Listener {
         TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(cell.getFlagBaseBlock().getLocation());
         if (battle != null) {
             battle.flagSuccessEvent(
-                FLAG_OCCURRENCES.get(cell.getNameOfFlagOwner()).completed(FlagResult.FLAG_SUCCESS, Strings.EMPTY)
+                FLAG_OCCURRENCES.get(cell.getNameOfFlagOwner()).completed(FlagStatus.FLAG_SUCCESS, Strings.EMPTY)
             );
             FLAG_OCCURRENCES.remove(cell.getNameOfFlagOwner());
         }
@@ -71,7 +71,7 @@ public class FlagWarListener implements Listener {
         TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(vec);
         if (battle != null) {
             battle.flagBreakEvent(
-                FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.FLAG_DEFENDED, player.getName())
+                FLAG_OCCURRENCES.get(flagOwner).completed(FlagStatus.FLAG_DEFENDED, player.getName())
             );
             FLAG_OCCURRENCES.remove(flagOwner);
         }
@@ -87,7 +87,7 @@ public class FlagWarListener implements Listener {
         TrackedBattle battle = TRACKED_BATTLE_MANAGER.getBattleAt(cellUnderAttack.getFlagBaseBlock().getLocation());
         if (battle != null) {
             battle.flagCancelEvent(
-                FLAG_OCCURRENCES.get(flagOwner).completed(FlagResult.ATTACK_CANCELLED, Strings.EMPTY)
+                FLAG_OCCURRENCES.get(flagOwner).completed(FlagStatus.ATTACK_CANCELLED, Strings.EMPTY)
             );
             FLAG_OCCURRENCES.remove(flagOwner);
         }

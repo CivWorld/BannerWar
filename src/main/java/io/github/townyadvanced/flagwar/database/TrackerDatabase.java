@@ -1,13 +1,13 @@
 package io.github.townyadvanced.flagwar.database;
 
 import io.github.townyadvanced.flagwar.FlagWar;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.Affiliation;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.enums.BattleResultEnum;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.DamageOccurrence;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.FlagOccurrence;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.occurrences.KillOccurrence;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.results.PlayerResult;
-import io.github.townyadvanced.flagwar.battle_tracking.structures.results.TrackedBattleResult;
+import io.github.townyadvanced.flagwar.battle_tracking.model.enums.Affiliation;
+import io.github.townyadvanced.flagwar.battle_tracking.model.enums.BattleStatus;
+import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.DamageOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.FlagOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.KillOccurrence;
+import io.github.townyadvanced.flagwar.battle_tracking.model.results.PlayerSnapshot;
+import io.github.townyadvanced.flagwar.battle_tracking.model.results.BattleSnapshot;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,18 +35,18 @@ public class TrackerDatabase {
         this.MANAGER = manager;
     }
 
-    public CompletableFuture<Collection<TrackedBattleResult>> getTrackedBattles() {
+    public CompletableFuture<Collection<BattleSnapshot>> getTrackedBattles() {
         return CompletableFuture.supplyAsync(() -> {
-            Collection<TrackedBattleResult> battles = new ArrayList<>();
+            Collection<BattleSnapshot> battles = new ArrayList<>();
             String query = "SELECT * FROM " + TRACKED_BATTLE_TABLE;
             try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         long unixStart = rs.getLong(4);
                         String townName = rs.getString(1);
-                        var tbr = new TrackedBattleResult(
+                        var tbr = new BattleSnapshot(
                             townName,
-                            BattleResultEnum.ONGOING,
+                            BattleStatus.ONGOING,
                             rs.getString(2),
                             rs.getString(3),
                             unixStart,
@@ -65,7 +65,7 @@ public class TrackerDatabase {
         });
     }
 
-    public CompletableFuture<Void> insertOrUpdateBattle(TrackedBattleResult r) {
+    public CompletableFuture<Void> insertOrUpdateBattle(BattleSnapshot r) {
         return CompletableFuture.runAsync(() -> {
             String query = "INSERT OR REPLACE INTO " + TRACKED_BATTLE_TABLE +
                 " VALUES(?,?,?,?,?)";
@@ -102,7 +102,7 @@ public class TrackerDatabase {
         });
     }
 
-    public void insertOrUpdatePlayersSync(Collection<PlayerResult> players, String battleTown) throws SQLException {
+    public void insertOrUpdatePlayersSync(Collection<PlayerSnapshot> players, String battleTown) throws SQLException {
 
         Connection conn = MANAGER.getConnection();
         conn.setAutoCommit(false);
@@ -132,15 +132,15 @@ public class TrackerDatabase {
         }
     }
 
-    private Map<String, PlayerResult> getTrackedPlayersSync(String battleTown) {
-        Map<String, PlayerResult> results = new HashMap<>();
+    private Map<String, PlayerSnapshot> getTrackedPlayersSync(String battleTown) {
+        Map<String, PlayerSnapshot> results = new HashMap<>();
         String query = "SELECT * FROM " + TRACKED_PLAYER_TABLE + " WHERE BattleTown = ?";
         try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
             ps.setString(1, battleTown);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String name = rs.getString(1);
-                    results.put(name, new PlayerResult(
+                    results.put(name, new PlayerSnapshot(
                             name,
                             Affiliation.valueOf(rs.getString(3)),
                             KillOccurrence.deserialize(rs.getString(6)),
