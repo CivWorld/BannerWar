@@ -41,7 +41,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * This class provides static methods that implement FastAsyncWorldEdit (FAWE)
+ * This class provides static methods that use
+ * FastAsyncWorldEdit (FAWE)
  * for copying a structure from a bounding box, and pasting it using the same bounding box.
  * <p>
  * It also saves the structure as a .schem file onto the "structures" folder in the plugin directory to be pasted later.
@@ -129,7 +130,7 @@ public final class WorldEditService {
                         .to(clipboard.getMinimumPoint())
                         .maskSource(WorldEditHelper.createBlockBlacklistMask(clipboard))
                         .copyEntities(false)
-                        .ignoreAirBlocks(false)
+                        .ignoreAirBlocks(true)
                         .build();
 
                 Operations.complete(operation);
