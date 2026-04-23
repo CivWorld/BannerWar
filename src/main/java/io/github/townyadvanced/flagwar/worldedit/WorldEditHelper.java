@@ -13,7 +13,7 @@ import org.bukkit.entity.Entity;
 /**
  * This class provides static functions that are used solely by the {@link WorldEditService} to keep both classes tidy.
  */
-class WorldEditHelper {
+final class WorldEditHelper {
 
     private WorldEditHelper() {} // shan't be constructed
 
