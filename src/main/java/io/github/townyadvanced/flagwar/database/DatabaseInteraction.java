@@ -40,18 +40,22 @@ public final class DatabaseInteraction {
             try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
+                        String world = rs.getString("World");
                         battles.add(new BattleRecord(
-                            rs.getString(1),
-                            rs.getString(2),
-                            rs.getString(3),
-                            rs.getInt(4),
-                            rs.getInt(5),
-                            rs.getLong(6),
-                            rs.getBoolean(7),
-                            BattleStage.valueOf(rs.getString(8)),
-                            UUID.fromString(rs.getString(9)),
-                            BattleUtil.toWorldCoords(rs.getString(9), rs.getString(10)),
-                            UUID.fromString(rs.getString(11))
+                            rs.getString("ContestedTown"),
+                            rs.getString("Attacker"),
+                            rs.getString("Defender"),
+                            rs.getInt("HomeX"),
+                            rs.getInt("HomeZ"),
+                            rs.getLong("StageStartTime"),
+                            rs.getBoolean("CityState"),
+                            BattleStage.valueOf(rs.getString("Stage")),
+                            UUID.fromString(world),
+                            BattleUtil.toWorldCoords(world, rs.getString("TownBlocks")),
+                            UUID.fromString(rs.getString("InitialMayor")),
+                            BattleRecord.LocationSnapshot.deserialize(rs.getString("OriginalTownSpawn")),
+                            rs.getString("OriginalHomeBlockWorld"),
+                            BattleRecord.deserializeOutposts(rs.getString("OriginalOutposts"))
                         ));
                     }
                     return battles;
@@ -66,12 +70,12 @@ public final class DatabaseInteraction {
     public CompletableFuture<Void> insertBattle(BattleRecord r) {
 
         return CompletableFuture.runAsync(() -> {
-            String query = "INSERT INTO " + BATTLE_TABLE + " VALUES(?,?,?,?,?,?,?,?,?,?,?)";
+            String query = "INSERT INTO " + BATTLE_TABLE + " (ContestedTown, Attacker, Defender, HomeX, HomeZ, StageStartTime, CityState, Stage, World, TownBlocks, InitialMayor, OriginalTownSpawn, OriginalHomeBlockWorld, OriginalOutposts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
 
-                ps.setString(1, r.attacker());
-                ps.setString(2, r.defender());
-                ps.setString(3, r.contestedTown());
+                ps.setString(1, r.contestedTown());
+                ps.setString(2, r.attacker());
+                ps.setString(3, r.defender());
                 ps.setInt(4, r.homeX());
                 ps.setInt(5, r.homeZ());
                 ps.setLong(6, r.stageStartTime());
@@ -80,6 +84,9 @@ public final class DatabaseInteraction {
                 ps.setString(9, r.worldID().toString());
                 ps.setString(10, BattleUtil.fromWorldCoords(r.townBlocksCoords()));
                 ps.setString(11, r.initialMayorID().toString());
+                ps.setString(12, r.originalTownSpawn() == null ? null : r.originalTownSpawn().serialize());
+                ps.setString(13, r.originalHomeBlockWorld());
+                ps.setString(14, BattleRecord.serializeOutposts(r.originalOutposts()));
 
                 if (ps.executeUpdate() > 0)
                     LOGGER.info("Successfully added battle " + r.contestedTown() + " to database!");
@@ -94,7 +101,7 @@ public final class DatabaseInteraction {
 
     public CompletableFuture<Void> insertOrUpdate(BattleRecord r) {
         return CompletableFuture.runAsync(() -> {
-            String query = "INSERT OR REPLACE INTO " + BATTLE_TABLE + " VALUES(?,?,?,?,?,?,?,?,?,?,?)";
+            String query = "INSERT OR REPLACE INTO " + BATTLE_TABLE + " (ContestedTown, Attacker, Defender, HomeX, HomeZ, StageStartTime, CityState, Stage, World, TownBlocks, InitialMayor, OriginalTownSpawn, OriginalHomeBlockWorld, OriginalOutposts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query)) {
 
                 ps.setString(1, r.contestedTown());
@@ -108,6 +115,9 @@ public final class DatabaseInteraction {
                 ps.setString(9, r.worldID().toString());
                 ps.setString(10, BattleUtil.fromWorldCoords(r.townBlocksCoords()));
                 ps.setString(11, r.initialMayorID().toString());
+                ps.setString(12, r.originalTownSpawn() == null ? null : r.originalTownSpawn().serialize());
+                ps.setString(13, r.originalHomeBlockWorld());
+                ps.setString(14, BattleRecord.serializeOutposts(r.originalOutposts()));
 
                 if (ps.executeUpdate() <= 0)
                     LOGGER.warning("Failed to add battle " + r.contestedTown() + " to database!");

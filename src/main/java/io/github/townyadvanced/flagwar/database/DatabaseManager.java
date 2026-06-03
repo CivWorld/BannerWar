@@ -7,9 +7,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class DatabaseManager {
     /** Holds the directory path of the database.*/
@@ -34,7 +37,10 @@ public final class DatabaseManager {
             Stage TEXT NOT NULL,
             World TEXT NOT NULL,
             TownBlocks TEXT NOT NULL,
-            InitialMayor TEXT NOT NULL
+            InitialMayor TEXT NOT NULL,
+            OriginalTownSpawn TEXT,
+            OriginalHomeBlockWorld TEXT,
+            OriginalOutposts TEXT
         );
         """,
         """
@@ -61,6 +67,7 @@ public final class DatabaseManager {
         openConnection();
         applyPragmas();
         createTables();
+        migrateTables();
     }
 
     /**
@@ -118,6 +125,36 @@ public final class DatabaseManager {
         try (Statement stmt = connection.createStatement()) {
             for (var TQ : QUERIES)
                 stmt.execute(TQ);
+        }
+    }
+
+    /**
+     * Applies backwards-compatible schema migrations for existing BannerWar databases.
+     * @throws SQLException when a schema inspection or migration query fails.
+     */
+    private void migrateTables() throws SQLException {
+        migrateBattleTable();
+    }
+
+    /**
+     * Adds pre-war metadata columns to pre-existing Battle tables.
+     * @throws SQLException when a schema inspection or migration query fails.
+     */
+    private void migrateBattleTable() throws SQLException {
+        Set<String> columns = new HashSet<>();
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery("PRAGMA table_info(Battle);")) {
+            while (rs.next())
+                columns.add(rs.getString("name"));
+        }
+
+        try (Statement stmt = connection.createStatement()) {
+            if (!columns.contains("OriginalTownSpawn"))
+                stmt.execute("ALTER TABLE Battle ADD COLUMN OriginalTownSpawn TEXT;");
+            if (!columns.contains("OriginalHomeBlockWorld"))
+                stmt.execute("ALTER TABLE Battle ADD COLUMN OriginalHomeBlockWorld TEXT;");
+            if (!columns.contains("OriginalOutposts"))
+                stmt.execute("ALTER TABLE Battle ADD COLUMN OriginalOutposts TEXT;");
         }
     }
 
