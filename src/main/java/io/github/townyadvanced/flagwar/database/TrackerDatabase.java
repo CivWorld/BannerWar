@@ -8,7 +8,9 @@ import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.FlagOcc
 import io.github.townyadvanced.flagwar.battle_tracking.model.occurrences.KillOccurrence;
 import io.github.townyadvanced.flagwar.battle_tracking.model.results.PlayerSnapshot;
 import io.github.townyadvanced.flagwar.battle_tracking.model.results.BattleSnapshot;
+import io.github.townyadvanced.flagwar.battle_tracking.util.IdentityNameResolver;
 import io.github.townyadvanced.flagwar.battle_tracking.util.SerializationUtil;
+import org.flintstqne.adminCore.identity.IdentityApi;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -48,6 +50,9 @@ public class TrackerDatabase {
 
     /** Holds the {@link Logger} of this class. */
     private final Logger LOGGER = FlagWar.getInstance().getLogger();
+
+    /** Resolves public identities only while building data intended for the website. */
+    private final IdentityNameResolver identityNames = new IdentityNameResolver(IdentityApi.get().orElse(null));
 
     public TrackerDatabase(DatabaseManager manager) {
         this.MANAGER = manager;
@@ -166,13 +171,14 @@ public class TrackerDatabase {
     public BattleResultPackage finalizeBattleSync(BattleSnapshot result) {
         long battleId;
         try {
-            battleId = createPackagingResult(result);
+            String summaryJson = serializeResultSummary(result);
+            battleId = createPackagingResult(result, summaryJson);
             Path archivePath = writeDamageArchive(battleId, result.townName());
             markResultComplete(battleId, archivePath);
             deleteTrackedPlayers(result.townName());
             deleteDamageOccurrences(result.townName());
             deleteTrackedBattle(result.townName());
-            return new BattleResultPackage(battleId, serializeResultSummary(result), archivePath);
+            return new BattleResultPackage(battleId, summaryJson, archivePath);
         } catch (SQLException | IOException e) {
             LOGGER.warning("Failed to package battle " + result.townName() + ": " + e.getMessage());
             return null;
@@ -280,7 +286,7 @@ public class TrackerDatabase {
     }
 
     /** Inserts the packaging row and returns its database-generated battle ID. */
-    private long createPackagingResult(BattleSnapshot result) throws SQLException {
+    private long createPackagingResult(BattleSnapshot result, String summaryJson) throws SQLException {
         String query = "INSERT INTO " + BATTLE_RESULT_TABLE +
             " (ContestedTown, Attacker, Defender, Status, StartTime, EndTime, SummaryJson, PackageStatus) VALUES (?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = MANAGER.getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
@@ -290,7 +296,7 @@ public class TrackerDatabase {
             ps.setString(4, result.status().name());
             ps.setLong(5, result.unixStartTime());
             ps.setLong(6, System.currentTimeMillis());
-            ps.setString(7, serializeResultSummary(result));
+            ps.setString(7, summaryJson);
             ps.setString(8, "PACKAGING");
             ps.executeUpdate();
 
@@ -318,7 +324,10 @@ public class TrackerDatabase {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     DamageOccurrence occurrence = new DamageOccurrence(
-                        rs.getString(1), rs.getString(2), rs.getDouble(3), rs.getLong(4));
+                        identityNames.publicName(rs.getString(1)),
+                        identityNames.publicName(rs.getString(2)),
+                        rs.getDouble(3),
+                        rs.getLong(4));
                     writer.write(occurrence.toJSON());
                     writer.newLine();
                 }
@@ -350,8 +359,44 @@ public class TrackerDatabase {
         summary.put("status", result.status().name());
         summary.put("startedAt", result.unixStartTime());
         summary.put("endedAt", System.currentTimeMillis());
-        summary.put("players", result.playerResultMap().values());
+        summary.put("players", result.playerResultMap().values().stream()
+            .map(this::withPublicNames)
+            .toList());
         return SerializationUtil.toJson(summary);
+    }
+
+    /** Creates a web-safe copy while retaining backend names in active tracker storage. */
+    private PlayerSnapshot withPublicNames(PlayerSnapshot player) {
+        return new PlayerSnapshot(
+            identityNames.publicName(player.playerName()),
+            player.affiliation(),
+            player.kills().stream()
+                .map(kill -> new KillOccurrence(
+                    identityNames.publicName(kill.killer()),
+                    identityNames.publicName(kill.killed()),
+                    kill.weapon(),
+                    kill.timeStamp()))
+                .toList(),
+            player.deaths().stream()
+                .map(kill -> new KillOccurrence(
+                    identityNames.publicName(kill.killer()),
+                    identityNames.publicName(kill.killed()),
+                    kill.weapon(),
+                    kill.timeStamp()))
+                .toList(),
+            player.damageDealt(),
+            player.damageTaken(),
+            player.potsUsed(),
+            player.gapsUsed(),
+            player.flags().stream()
+                .map(flag -> new FlagOccurrence(
+                    identityNames.publicName(flag.flagPlacer()),
+                    flag.unixStartTime(),
+                    flag.lifeTime(),
+                    flag.result(),
+                    identityNames.publicName(flag.flagDestroyer())))
+                .toList()
+        );
     }
 
     /** Deletes the active tracked-battle metadata after final packaging succeeds. */
