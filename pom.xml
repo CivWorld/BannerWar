@@ -161,6 +161,13 @@
             <version>1.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.flintstqne</groupId>
+            <artifactId>AdminCore</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/AdminCore-1.0.jar</systemPath>
+        </dependency>
 
         <dependency>
             <groupId>com.palmergames.bukkit.towny</groupId>
