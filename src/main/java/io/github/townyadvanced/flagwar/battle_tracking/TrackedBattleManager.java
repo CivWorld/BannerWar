@@ -1,13 +1,16 @@
 package io.github.townyadvanced.flagwar.battle_tracking;
 
 import com.palmergames.bukkit.towny.object.Town;
+import io.github.townyadvanced.flagwar.BannerWarAPI;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.battle_tracking.model.enums.BattleStatus;
 import io.github.townyadvanced.flagwar.battle_tracking.model.results.BattleSnapshot;
 import io.github.townyadvanced.flagwar.database.TrackerDatabase;
 import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.objects.Battle;
+import io.github.townyadvanced.flagwar.util.Broadcasts;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
@@ -20,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -78,6 +82,11 @@ public final class TrackedBattleManager {
         if (trackedBattle == null) return;
 
         BattleSnapshot result = BattleSnapshot.parse(trackedBattle, status);
+        Set<UUID> participantIds = new HashSet<>();
+        trackedBattle.getTrackedPlayers()
+            .forEach(player -> participantIds.add(player.getOfflinePlayer().getUniqueId()));
+        BannerWarAPI.getAssociatedPlayers(battle)
+            .forEach(player -> participantIds.add(player.getUniqueId()));
         var pendingDamageOccurrences = trackedBattle.drainPendingDamageOccurrences();
 
         java.util.concurrent.CompletableFuture.runAsync(() -> {
@@ -85,11 +94,44 @@ public final class TrackedBattleManager {
                 if (!DATABASE.insertDamageOccurrencesSync(pendingDamageOccurrences, result.townName())) return;
                 DATABASE.insertOrUpdatePlayersSync(result.playerResultMap().values(), result.townName());
                 var battlePackage = DATABASE.finalizeBattleSync(result);
-                if (battlePackage != null) RESULT_UPLOADER.upload(battlePackage);
+                if (battlePackage != null) {
+                    String statsPageUrl = RESULT_UPLOADER.getStatsPageUrl(battlePackage.battleId());
+                    if (statsPageUrl != null) {
+                        RESULT_UPLOADER.upload(battlePackage)
+                            .thenRun(() -> Bukkit.getScheduler().runTaskLater(PLUGIN,
+                                () -> notifyParticipants(participantIds, statsPageUrl), 100L))
+                            .exceptionally(ex -> null);
+                    } else {
+                        RESULT_UPLOADER.upload(battlePackage);
+                    }
+                }
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    /** Notifies online, non-bot players who participated in the completed battle. */
+    private void notifyParticipants(Set<UUID> participantIds, String statsPageUrl) {
+        BannerWarAPI.getAllBots().handle((bots, ex) -> {
+            if (ex != null) {
+                PLUGIN.getLogger().warning("Could not retrieve TownyAI bots for stats notification: " + ex.getMessage());
+                return Set.<org.bukkit.entity.Player>of();
+            }
+            return bots;
+        }).thenAccept(bots -> Bukkit.getScheduler().runTask(PLUGIN, () -> {
+            Set<UUID> botIds = new HashSet<>();
+            bots.stream()
+                .filter(Objects::nonNull)
+                .forEach(bot -> botIds.add(bot.getUniqueId()));
+            Bukkit.getOnlinePlayers().stream()
+                .filter(player -> participantIds.contains(player.getUniqueId()))
+                .filter(player -> !botIds.contains(player.getUniqueId()))
+                .forEach(player -> Broadcasts.sendMessage(player,
+                    ChatColor.GREEN + "Stats on this war can be found at "
+                        + ChatColor.AQUA + ChatColor.UNDERLINE + statsPageUrl
+                        + ChatColor.RESET + ChatColor.GREEN + "."));
+        }));
     }
 
     public TrackedBattleManager(TrackerDatabase database, BattleManager battleManager) {

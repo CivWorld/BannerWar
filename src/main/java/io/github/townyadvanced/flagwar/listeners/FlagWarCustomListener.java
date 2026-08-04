@@ -37,6 +37,7 @@ import com.palmergames.bukkit.towny.object.economy.transaction.TransactionType;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import io.github.townyadvanced.flagwar.FlagWar;
 import io.github.townyadvanced.flagwar.FlagWarAPI;
+import io.github.townyadvanced.flagwar.battle_tracking.util.IdentityNameResolver;
 import io.github.townyadvanced.flagwar.config.FlagWarConfig;
 import io.github.townyadvanced.flagwar.events.CellAttackCanceledEvent;
 import io.github.townyadvanced.flagwar.events.CellAttackEvent;
@@ -48,6 +49,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.flintstqne.adminCore.identity.IdentityApi;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
@@ -59,6 +61,7 @@ import java.util.logging.Logger;
  * General-purpose event listener for tracking Towny and FlagWar events.
  */
 public class FlagWarCustomListener implements Listener {
+    private final IdentityNameResolver identityNames = new IdentityNameResolver(IdentityApi.get().orElse(null));
     /** Holds localized string for key: error.player-town-under-attack. */
     public static final String DENY_FLAG_TOWN_UNDER_ATTACK
         = Translate.fromPrefixed("error.player-town-under-attack");
@@ -172,7 +175,7 @@ public class FlagWarCustomListener implements Listener {
                     var reason = String.format("War - Won Enemy %s (Pillage)", townBlockType);
                     amount = townPayAttackerSpoils(attackingResident, defendingTown, amount, reason);
                     moneyTransferMessage = Translate.fromPrefixed("broadcast.area.pillaged",
-                        attackingResident.getFormattedName(),
+                        identityNames.publicName(attackingResident.getName()),
                         TownyEconomyHandler.getFormattedBalance(amount),
                         defendingTown.getFormattedName()
                     );
@@ -182,7 +185,7 @@ public class FlagWarCustomListener implements Listener {
                     var reason = String.format("War - Won Enemy %s (Rebuild Cost)", townBlockType);
                     attackerPayTownRebuild(cell, attackingResident, attackingNation, defendingTown, amount, reason);
                     moneyTransferMessage = Translate.fromPrefixed("broadcast.area.rebuilding",
-                        attackingResident.getFormattedName(),
+                        identityNames.publicName(attackingResident.getName()),
                         TownyEconomyHandler.getFormattedBalance(amount),
                         defendingTown.getFormattedName()
                     );
@@ -438,7 +441,7 @@ public class FlagWarCustomListener implements Listener {
     }
 
     private void messageWon(final CellUnderAttack cell, final Resident atkRes, final Nation atkNat) {
-        String resName = atkRes.getFormattedName();
+        String resName = identityNames.publicName(atkRes.getName());
         String natName = atkNat.getFormattedName();
         String msg;
         if (atkNat.hasTag()) {
@@ -561,23 +564,18 @@ public class FlagWarCustomListener implements Listener {
     }
 
     /**
-     * Takes a {@link Player} object, and gets the associated name. If the player is a valid {@link Resident}, get the
-     * formatted name from its Resident. If Null, "Greater&nbsp;Forces" is used instead.
+     * Takes a {@link Player} object and resolves its public identity. If null,
+     * "Greater&nbsp;Forces" is used instead.
      *
      * @param player the Player object to parse
-     * @return a name for the associated Player, which may or not be formatted from an associated Resident, or "Greater
-     * &nbsp;Forces" if the player was null.
+     * @return the public name for the associated Player, or "Greater&nbsp;Forces" if the player was null.
      */
     private String getPlayerOrGF(final Player player) {
         String playerName;
         if (player == null) {
             playerName = "Greater Forces";
         } else {
-            playerName = player.getName();
-            var playerRes = universe.getResident(player.getUniqueId());
-            if (playerRes != null) {
-                playerName = playerRes.getFormattedName();
-            }
+            playerName = identityNames.publicName(player.getName());
         }
         return playerName;
     }
@@ -590,11 +588,11 @@ public class FlagWarCustomListener implements Listener {
 
     private void msgAttackDefended(final Resident atkRes, final Resident defRes, final String formattedMoney) {
         String message;
-        message = Translate.fromPrefixed("area.defended.attacker", defRes.getFormattedName(), formattedMoney);
+        message = Translate.fromPrefixed("area.defended.attacker", identityNames.publicName(defRes.getName()), formattedMoney);
         if (atkRes.isOnline() && atkRes.getPlayer() != null) {
             atkRes.getPlayer().sendMessage(message);
         }
-        message = Translate.fromPrefixed("area.defended.defender", atkRes.getFormattedName(), formattedMoney);
+        message = Translate.fromPrefixed("area.defended.defender", identityNames.publicName(atkRes.getName()), formattedMoney);
         if (defRes.isOnline() && defRes.getPlayer() != null) {
             defRes.getPlayer().sendMessage(message);
         }

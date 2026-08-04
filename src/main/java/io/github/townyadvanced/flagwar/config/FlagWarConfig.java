@@ -122,6 +122,11 @@ public final class FlagWarConfig {
         return PLUGIN.getConfig().getString("battle_results.website.base_url", "");
     }
 
+    /** Returns the path below the website URL where battle result pages are published. */
+    public static String getBattleResultWebsiteSubdirectory() {
+        return PLUGIN.getConfig().getString("battle_results.website.subdir", "");
+    }
+
     /** Returns the HMAC key used to authenticate battle-result uploads. */
     public static String getBattleResultHmacKey() {
         return PLUGIN.getConfig().getString("battle_results.website.hmac_key", "");

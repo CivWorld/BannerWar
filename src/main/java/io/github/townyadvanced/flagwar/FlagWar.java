@@ -38,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.github.townyadvanced.flagwar.battle_tracking.TrackedBattleManager;
 import io.github.townyadvanced.flagwar.battle_tracking.listeners.FlagWarListener;
 import io.github.townyadvanced.flagwar.battle_tracking.listeners.VanillaListener;
+import io.github.townyadvanced.flagwar.battle_tracking.util.IdentityNameResolver;
 import io.github.townyadvanced.flagwar.command.ReloadConfig;
 import io.github.townyadvanced.flagwar.command.StageAdvance;
 import io.github.townyadvanced.flagwar.command.TownyAdminReloadAddon;
@@ -79,6 +80,7 @@ import io.github.townyadvanced.flagwar.util.Broadcasts;
 import io.github.townyadvanced.flagwar.util.CivicsUtil;
 import io.github.townyadvanced.flagwar.util.Messaging;
 import org.bstats.bukkit.Metrics;
+import org.flintstqne.adminCore.identity.IdentityApi;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -679,7 +681,8 @@ public class FlagWar extends JavaPlugin {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!getCellsUnderAttackByPlayer(player.getName()).isEmpty())
                 TownyMessaging.sendGlobalMessage(Translate.fromPrefixed("broadcast.area.under_attack",
-                    landOwnerTown.getFormattedName(), finalCoordinates, attackingResident.getFormattedName()));
+                    landOwnerTown.getFormattedName(), finalCoordinates,
+                    new IdentityNameResolver(IdentityApi.get().orElse(null)).publicName(player.getName())));
 
             },  delay);
 
