@@ -45,10 +45,24 @@ public final class BattleResultUploader {
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
                 throw new IllegalStateException("Failed to upload battle result " + battlePackage.battleId(), e);
             }
-        }).exceptionally(ex -> {
-            FlagWar.getInstance().getLogger().warning(ex.getMessage());
-            return null;
+        }).whenComplete((ignored, ex) -> {
+            if (ex != null) FlagWar.getInstance().getLogger().warning(ex.getMessage());
         });
+    }
+
+    /**
+     * Returns the public stats-page URL for a successfully published battle.
+     * @return the stats-page URL, or {@code null} when publishing is unavailable
+     */
+    public String getStatsPageUrl(long battleId) {
+        if (!FlagWarConfig.isBattleResultUploadEnabled()) return null;
+
+        String baseUrl = FlagWarConfig.getBattleResultWebsiteUrl().replaceAll("/+$", "");
+        String subdirectory = FlagWarConfig.getBattleResultWebsiteSubdirectory().replaceAll("^/+|/+$", "");
+        if (baseUrl.isEmpty() || subdirectory.isEmpty()
+            || FlagWarConfig.getBattleResultHmacKey().isEmpty()) return null;
+
+        return baseUrl + "/" + subdirectory + "/" + battleId;
     }
 
     private static void send(String baseUrl, String path, String method, byte[] body, String contentType, String key)

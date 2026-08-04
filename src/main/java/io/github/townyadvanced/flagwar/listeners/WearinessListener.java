@@ -10,6 +10,7 @@ import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import io.github.townyadvanced.flagwar.BannerWarAPI;
+import io.github.townyadvanced.flagwar.battle_tracking.util.IdentityNameResolver;
 import io.github.townyadvanced.flagwar.managers.BattleManager;
 import io.github.townyadvanced.flagwar.util.CivicsUtil;
 import io.github.townyadvanced.flagwar.config.BannerWarConfig;
@@ -25,10 +26,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.flintstqne.adminCore.identity.IdentityApi;
 
 import java.util.Collection;
 
 public class WearinessListener implements Listener {
+
+    private final IdentityNameResolver identityNames = new IdentityNameResolver(IdentityApi.get().orElse(null));
 
     /** Holds the {@link JavaPlugin} instance. */
     private final JavaPlugin PLUGIN;
@@ -158,12 +162,12 @@ public class WearinessListener implements Listener {
 
         if (CivicsUtil.isFederation(n)) {
             if (CivicsUtil.getWearinessAsPercentage(t) >= threshold) {
-                e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot kick " + e.getKickedResident().getName() + " because your town's war weariness exceeds " + threshold + "!"));
+                e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot kick " + identityNames.publicName(e.getKickedResident().getName()) + " because your town's war weariness exceeds " + threshold + "!"));
                 e.setCancelled(true);
             }
         }
         else if (CivicsUtil.getWearinessAsPercentage(n) >= threshold) {
-            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot kick " + e.getKickedResident().getName() + " because your nation's war weariness exceeds " + threshold + "!"));
+            e.setCancelMessage(Broadcasts.prepareErrorMessage("You cannot kick " + identityNames.publicName(e.getKickedResident().getName()) + " because your nation's war weariness exceeds " + threshold + "!"));
             e.setCancelled(true);
         }
     }

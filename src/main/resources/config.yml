@@ -25,13 +25,6 @@ translation: "en_US"
 # (Cosmetic) Show the ASCII banner on startup. Disable for cleaner/smaller server logs.
 show-startup-marquee: true
 
-# Completed battle result publishing. Keep enabled false until the site URL and shared key are configured.
-battle_results:
-    website:
-        enabled: false
-        base_url: "https://site.com"
-        hmac_key: ""
-
 # General Gameplay Rules
 rules:
     # Disabling this effectively disables the whole plugin... but some event listeners will still operate.
@@ -193,13 +186,21 @@ universe:
         - gold_block
 
     # The color of the bracket parts of the prefix used in server broadcasts. Case-insensitive.
-    bracket_color: DARK_PURPLE
+    bracket_color: DARK_GRAY
 
     # The color of the name part of the prefix used in server broadcasts. Case-insensitive.
-    name_color: LIGHT_PURPLE
+    name_color: RED
 
     # The name of the entity providing server broadcasts.
-    prefix_name: Battria
+    prefix_name: War
+
+# Completed battle result publishing. Keep enabled false until the site URL and shared key are configured.
+battle_results:
+    website:
+        enabled: false
+        base_url: "https://site.com"
+        subdir: "battle"
+        hmac_key: ""
 
 # Define settings relating to battle features.
 battle:
