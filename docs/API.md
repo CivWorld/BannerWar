@@ -204,6 +204,7 @@ Class: `io.github.townyadvanced.flagwar.objects.CellUnderAttack`
 | `getFlagTimerBlockLocation()` | `Location` | Location one block above the base, used for timer material. |
 | `getFlagLightBlock()` | `Block` | Light/top block two blocks above the base. |
 | `getNameOfFlagOwner()` | `String` | Name of the player who placed the flag. |
+| `getFlagTimeLeft()` | `Duration` | Amount of time remaining before the flag wins the cell. |
 | `hasEnded()` | `boolean` | Whether the flag's remaining lifetime is zero or negative. |
 | `getCellString()` | `String` | Human-readable `world (x, z)` identifier. |
 | `isFlagLight(Block block)` | `boolean` | Whether a block is the light/top block. |

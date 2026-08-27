@@ -260,6 +260,15 @@ public class CellUnderAttack extends Cell {
     }
 
     /**
+     * Returns the amount of time remaining before this flag wins the cell.
+     *
+     * @return the remaining flag lifetime
+     */
+    public Duration getFlagTimeLeft() {
+        return flagTimeLeft;
+    }
+
+    /**
      * @return True if the {@link #flagTimeLeft} is negative or zero.
      */
     public boolean hasEnded() {
