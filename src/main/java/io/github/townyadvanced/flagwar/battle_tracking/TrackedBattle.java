@@ -207,7 +207,11 @@ public class TrackedBattle {
         TRACKED_PLAYERS.values().forEach(tp -> {
             UUID id = tp.getOfflinePlayer().getUniqueId();
             var affiliation = determineAffiliation(id);
-            tp.setAffiliation(affiliation);
+            // Ruining a city state can remove its bots' Towny associations before the final
+            // battle snapshot is created. Preserve a previously established side when that
+            // transient state would otherwise downgrade the player to a vagrant.
+            if (affiliation != Affiliation.VAGRANT || tp.getAffiliation() == Affiliation.VAGRANT)
+                tp.setAffiliation(affiliation);
 
         });
         return Collections.unmodifiableCollection(TRACKED_PLAYERS.values());

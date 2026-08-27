@@ -133,7 +133,7 @@ public final class WorldEditService {
                         .to(clipboard.getMinimumPoint())
                         .maskSource(WorldEditHelper.createBlockBlacklistMask(clipboard))
                         .copyEntities(false)
-                        .ignoreAirBlocks(true)
+                        //.ignoreAirBlocks(true)
                         .build();
 
                 Operations.complete(operation);
