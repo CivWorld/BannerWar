@@ -333,6 +333,11 @@ public class FlagWar extends JavaPlugin {
         return (FlagWar) plugin;
     }
 
+    /** @return the manager responsible for WayfinderAPI integration. */
+    public WaypointManager getWaypointManager() {
+        return waypointManager;
+    }
+
     /** Set the FlagWar {@link #plugin} instance.*/
     private static void setInstance() {
         plugin = Bukkit.getServer().getPluginManager().getPlugin("FlagWar");

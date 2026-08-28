@@ -153,7 +153,8 @@
             <groupId>town.sheepy</groupId>
             <artifactId>WayFinderAPI</artifactId>
             <version>1.0</version>
-            <scope>provided</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/WayfinderAPI-1.0.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>town.sheepy</groupId>

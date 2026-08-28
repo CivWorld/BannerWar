@@ -312,6 +312,7 @@ public class CellUnderAttack extends Cell {
         if (!hasEnded() && !shouldNotSwitchColor()) {
 
             flagTimerBlock.setType(timer[flagPhaseID]);
+            FlagWar.getFlagWar().getWaypointManager().updateWaypointColor(this);
             // for (Block block : beaconFlagBlocks) block.setType(timer[flagPhaseID]);
 
             LOGGER.log(Level.INFO, () ->
@@ -584,6 +585,7 @@ public class CellUnderAttack extends Cell {
     private void makeInfernal() {
         flagTimeLeft = flagTimeLeft.plusSeconds(BannerWarConfig.getInfernalLifeTimeIncrease());
         flagTimerBlock.setType(BannerWarConfig.getInfernalWarFlagMaterial());
+        FlagWar.getFlagWar().getWaypointManager().updateWaypointColor(this);
     }
 
     /**

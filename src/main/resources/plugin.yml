@@ -23,6 +23,7 @@ softdepend:
     - DecentHolograms
     - WorldEdit
     - PlayerLocatorAPI
+    - WayfinderAPI
     - Boutique
 
 depend:
