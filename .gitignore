@@ -35,3 +35,6 @@ dependency-reduced-pom.xml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+#deps
+libs/

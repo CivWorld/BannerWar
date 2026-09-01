@@ -234,6 +234,8 @@ public class Battle {
      * If this time is negative, it returns a {@link Duration} of zero seconds.
      */
     public Duration getTimeRemainingForCurrentStage() {
+        if (getCurrentStage() == BattleStage.END) return Duration.ZERO;
+
         long elapsedMillis = System.currentTimeMillis() - stageStartTimeMillis;
         Duration remainingTime = STAGE_DURATIONS.get(getCurrentStage()).minusMillis(elapsedMillis);
         return remainingTime.isNegative() ? Duration.ZERO : remainingTime;
@@ -558,7 +560,7 @@ public class Battle {
      */
     public void updateBossBar() {
 
-        if (getCurrentStage() == BattleStage.DORMANT) return;
+        if (getCurrentStage() == BattleStage.DORMANT || getCurrentStage() == BattleStage.END) return;
 
         String bossBarMessage = "[BATTLE] %s - %s"; // probably going to make this configurable?
 

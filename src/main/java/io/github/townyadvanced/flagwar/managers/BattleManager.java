@@ -61,6 +61,13 @@ public final class BattleManager {
 
         DATABASE.getBattles().thenAcceptAsync(battleRecords -> {
             for (BattleRecord r : battleRecords) {
+                // END is a terminal marker, not a timed stage. Clean up records left behind by an
+                // interrupted/asynchronous deletion instead of restoring them as active battles.
+                if (r.stage() == BattleStage.END) {
+                    DATABASE.deleteBattle(r.contestedTown());
+                    continue;
+                }
+
                 Battle battle = new Battle(r, this);
                 ACTIVE_BATTLES.put(r.contestedTown(), battle);
                 PLUGIN.getLogger().info("Battle " + r.contestedTown() + " has been resumed");
@@ -91,10 +98,16 @@ public final class BattleManager {
      * Refreshes the battles' states, waypoints, and saves them to the database.
      */
     public void updateBattles() {
-        for (Map.Entry<String, Battle> entry : ACTIVE_BATTLES.entrySet()) {
-            Battle battle = entry.getValue();
+        // A stage advance can remove a completed battle, so iterate over a snapshot.
+        for (Battle battle : new ArrayList<>(ACTIVE_BATTLES.values())) {
+            if (battle.getCurrentStage() == BattleStage.END) {
+                removeBattleAndDB(battle);
+                continue;
+            }
 
             if (battle.isPendingStageAdvance()) battle.advanceStage(true);
+            if (battle.getCurrentStage() == BattleStage.END) continue;
+
             battle.updateBossBar();
 
             BannerWarAPI.getAllBots().thenAccept(bots -> {
@@ -167,7 +180,7 @@ public final class BattleManager {
      * @param battle the specified {@link Battle}
      */
     public static void removeBattle(Battle battle) {
-        removeBattle(battle.getContestedTown());
+        ACTIVE_BATTLES.entrySet().removeIf(entry -> entry.getValue() == battle);
     }
 
     /**
